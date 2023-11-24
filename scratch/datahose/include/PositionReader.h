@@ -20,15 +20,15 @@ typedef std::map<uint32_t, std::pair<double, double>> position_map_t;
 
 class PositionReader
 {
-private:
-  std::shared_ptr<arrow::io::ReadableFile> m_positionFile;
+  private:
+    std::shared_ptr<arrow::io::ReadableFile> m_positionFile;
 
-  std::shared_ptr<arrow::Table> readPositionData ();
+    std::shared_ptr<arrow::Table> readPositionData();
 
-public:
-  explicit PositionReader (const std::string &filename);
+  public:
+    explicit PositionReader(const std::string& filename);
 
-  position_map_t getPositionData ();
+    position_map_t getPositionData();
 };
 
 #endif // NS3_POSITION_READER_H

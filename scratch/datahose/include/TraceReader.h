@@ -22,31 +22,33 @@ using namespace ns3;
 
 class TraceReader
 {
-private:
-  std::shared_ptr<arrow::io::ReadableFile> m_traceFile;
-  int64_t m_rowGroupIdx;
+  private:
+    std::shared_ptr<arrow::io::ReadableFile> m_traceFile;
+    int64_t m_rowGroupIdx;
 
-  [[nodiscard]] static int64_t findIndexOfTimeStep (const std::shared_ptr<arrow::Table> &table,
-                                                    int64_t timeStep);
+    [[nodiscard]] static int64_t findIndexOfTimeStep(const std::shared_ptr<arrow::Table>& table,
+                                                     int64_t timeStep);
 
-  [[nodiscard]] static int64_t getLastTimeStep (const std::shared_ptr<arrow::Table> &table);
+    [[nodiscard]] static int64_t getLastTimeStep(const std::shared_ptr<arrow::Table>& table);
 
-  [[nodiscard]] static int64_t getFirstTimeStep (const std::shared_ptr<arrow::Table> &table);
+    [[nodiscard]] static int64_t getFirstTimeStep(const std::shared_ptr<arrow::Table>& table);
 
-  [[nodiscard]] static std::shared_ptr<arrow::Table>
-  pruneTableUntil (const std::shared_ptr<arrow::Table> &table, int64_t timeStep);
+    [[nodiscard]] static std::shared_ptr<arrow::Table> pruneTableUntil(
+        const std::shared_ptr<arrow::Table>& table,
+        int64_t timeStep);
 
-  [[nodiscard]] static std::shared_ptr<arrow::Table>
-  startTableFrom (const std::shared_ptr<arrow::Table> &table, int64_t timeStep);
+    [[nodiscard]] static std::shared_ptr<arrow::Table> startTableFrom(
+        const std::shared_ptr<arrow::Table>& table,
+        int64_t timeStep);
 
-  [[nodiscard]] static std::shared_ptr<arrow::Table>
-  getCombinedTable (std::shared_ptr<arrow::Table> &combinedTable,
-                    const std::shared_ptr<arrow::Table> &table);
+    [[nodiscard]] static std::shared_ptr<arrow::Table> getCombinedTable(
+        std::shared_ptr<arrow::Table>& combinedTable,
+        const std::shared_ptr<arrow::Table>& table);
 
-public:
-  explicit TraceReader (const std::string &filename);
+  public:
+    explicit TraceReader(const std::string& filename);
 
-  std::shared_ptr<arrow::Table> streamDataBetween (int64_t startTime, int64_t endTime);
+    std::shared_ptr<arrow::Table> streamDataBetween(int64_t startTime, int64_t endTime);
 };
 
 #endif // NS3_TRACE_READER_H

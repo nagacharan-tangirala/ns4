@@ -17,15 +17,16 @@ using namespace ns3;
 
 class TraceMobility
 {
-private:
-  TraceReader m_traceReader;
+  private:
+    TraceReader m_traceReader;
 
-public:
-  explicit TraceMobility (const std::string &filename);
+  public:
+    explicit TraceMobility(const std::string& filename);
 
-  std::unique_ptr<NodeContainer>
-  addWaypointsBetween (const Time &starTime, const Time &endTime,
-                       std::unique_ptr<NodeContainer> m_vehicleNodes);
+    std::unique_ptr<NodeContainer> addWaypointsBetween(
+        const Time& starTime,
+        const Time& endTime,
+        std::unique_ptr<NodeContainer> m_vehicleNodes);
 };
 
 #endif // NS3_TRACE_MOBILITY_H

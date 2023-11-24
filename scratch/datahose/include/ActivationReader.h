@@ -26,18 +26,18 @@ typedef std::map<uint32_t, std::pair<Time, Time>> activation_map_t;
 
 class ActivationReader
 {
-private:
-  std::shared_ptr<arrow::io::ReadableFile> m_activationFile;
+  private:
+    std::shared_ptr<arrow::io::ReadableFile> m_activationFile;
 
-  std::shared_ptr<arrow::Table> readActivationData ();
+    std::shared_ptr<arrow::Table> readActivationData();
 
-public:
-  explicit ActivationReader (const std::string &filename);
+  public:
+    explicit ActivationReader(const std::string& filename);
 
-  activation_map_t getActivationTimes ();
+    activation_map_t getActivationTimes();
 
-  Time getTimeFromTimeColumn (const std::shared_ptr<arrow::ChunkedArray> &timeColumn,
-                              int position) const;
+    Time getTimeFromTimeColumn(const std::shared_ptr<arrow::ChunkedArray>& timeColumn,
+                               int position) const;
 };
 
 #endif // NS3_ACTIVATION_READER_H
