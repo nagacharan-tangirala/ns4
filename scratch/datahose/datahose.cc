@@ -14,17 +14,29 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
-#include "ns3/core-module.h"
+#include "include/Core.h"
 
 using namespace ns3;
 
-NS_LOG_COMPONENT_DEFINE ("ScratchSimulator");
-
-int 
-main (int argc, char *argv[])
+int main (int argc, char *argv[])
 {
-  NS_LOG_UNCOND ("Scratch Simulator");
+    if (argc != 2) {
+        std::cout << "Missing config TOML file. Usage: <datahose> <config.toml>\"";
+        return 1;
+    }
+    std::string config_file = argv[1];
 
-  Simulator::Run ();
-  Simulator::Destroy ();
+    std::cout << "Building simulation for config - " << config_file << std::endl;
+    setenv("NS_LOG", "Core=all", true);
+    LogComponentEnable("Core", LOG_LEVEL_ALL);
+
+    std::unique_ptr<Core> core = std::make_unique<Core>(config_file);
+    if (!core->build()) {
+        return 1;
+    }
+
+    Simulator::Stop(core->getStopTime());
+    Simulator::Run();
+    Simulator::Destroy();
+    return 0;
 }
