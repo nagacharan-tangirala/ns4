@@ -1821,6 +1821,91 @@ function(log_find_searched_paths)
   message(STATUS ${log_find})
 endfunction()
 
+function(get_scratch_prefix prefix)
+  # /path/to/ns-3-dev/scratch/nested-subdir
+  set(temp ${CMAKE_CURRENT_SOURCE_DIR})
+  # remove /path/to/ns-3-dev/ to get scratch/nested-subdir
+  string(REPLACE "${PROJECT_SOURCE_DIR}/" "" temp "${temp}")
+  # replace path separators with underlines
+  string(REPLACE "/" "_" temp "${temp}")
+  # save the prefix value to the passed variable
+  set(${prefix} ${temp}_ PARENT_SCOPE)
+endfunction()
+
+function(build_exec)
+  # Argument parsing
+  set(options IGNORE_PCH STANDALONE)
+  set(oneValueArgs EXECNAME EXECNAME_PREFIX EXECUTABLE_DIRECTORY_PATH
+                   INSTALL_DIRECTORY_PATH
+  )
+  set(multiValueArgs SOURCE_FILES HEADER_FILES LIBRARIES_TO_LINK DEFINITIONS)
+  cmake_parse_arguments(
+    "BEXEC" "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN}
+  )
+
+  # Resolve nested scratch prefixes without user intervention
+  if("${CMAKE_CURRENT_SOURCE_DIR}" MATCHES "scratch"
+     AND "${BEXEC_EXECNAME_PREFIX}" STREQUAL ""
+  )
+    get_scratch_prefix(BEXEC_EXECNAME_PREFIX)
+  endif()
+
+  add_executable(
+    ${BEXEC_EXECNAME_PREFIX}${BEXEC_EXECNAME} "${BEXEC_SOURCE_FILES}"
+  )
+
+  target_compile_definitions(
+    ${BEXEC_EXECNAME_PREFIX}${BEXEC_EXECNAME} PUBLIC ${BEXEC_DEFINITIONS}
+  )
+
+  if(${PRECOMPILE_HEADERS_ENABLED} AND (NOT ${BEXEC_IGNORE_PCH}))
+    target_precompile_headers(
+      ${BEXEC_EXECNAME_PREFIX}${BEXEC_EXECNAME} REUSE_FROM stdlib_pch_exec
+    )
+  endif()
+
+  if(${NS3_STATIC} AND (NOT BEXEC_STANDALONE))
+    target_link_libraries(
+      ${BEXEC_EXECNAME_PREFIX}${BEXEC_EXECNAME} ${LIB_AS_NEEDED_PRE_STATIC}
+      ${lib-ns3-static}
+    )
+  elseif(${NS3_MONOLIB} AND (NOT BEXEC_STANDALONE))
+    target_link_libraries(
+      ${BEXEC_EXECNAME_PREFIX}${BEXEC_EXECNAME} ${LIB_AS_NEEDED_PRE}
+      ${lib-ns3-monolib} ${LIB_AS_NEEDED_POST}
+    )
+  else()
+    target_link_libraries(
+      ${BEXEC_EXECNAME_PREFIX}${BEXEC_EXECNAME} ${LIB_AS_NEEDED_PRE}
+      "${BEXEC_LIBRARIES_TO_LINK}" ${LIB_AS_NEEDED_POST}
+    )
+  endif()
+
+  set_runtime_outputdirectory(
+    "${BEXEC_EXECNAME}" "${BEXEC_EXECUTABLE_DIRECTORY_PATH}/"
+    "${BEXEC_EXECNAME_PREFIX}"
+  )
+
+  if(BEXEC_INSTALL_DIRECTORY_PATH)
+    install(TARGETS ${BEXEC_EXECNAME_PREFIX}${BEXEC_EXECNAME}
+            EXPORT ns3ExportTargets
+            RUNTIME DESTINATION ${BEXEC_INSTALL_DIRECTORY_PATH}
+    )
+    get_property(
+      filename TARGET ${BEXEC_EXECNAME_PREFIX}${BEXEC_EXECNAME}
+      PROPERTY RUNTIME_OUTPUT_NAME
+    )
+    add_custom_target(
+      uninstall_${BEXEC_EXECNAME_PREFIX}${BEXEC_EXECNAME}
+      COMMAND
+        rm ${CMAKE_INSTALL_PREFIX}/${BEXEC_INSTALL_DIRECTORY_PATH}/${filename}
+    )
+    add_dependencies(
+      uninstall uninstall_${BEXEC_EXECNAME_PREFIX}${BEXEC_EXECNAME}
+    )
+  endif()
+endfunction()
+
 function(find_external_library)
   # Parse arguments
   set(options QUIET)
