@@ -19,7 +19,7 @@ add_library(
         include/ActivationReader.h
         include/PositionReader.h
         include/ArrowUtils.h
-        include/NetSetup.h
+        include/NetworkParameters.h
         include/NetSetup.h
         src/NetSetup.cpp
 )
@@ -34,10 +34,9 @@ build_exec(
         core-lib
         arrow
         parquet
-        ${libmillicar}
         ${libcore}
+        ${libnr}
         ${libpropagation}
         ${libspectrum}
-        ${libmmwave}
     EXECUTABLE_DIRECTORY_PATH ${CMAKE_OUTPUT_DIRECTORY}
 )
