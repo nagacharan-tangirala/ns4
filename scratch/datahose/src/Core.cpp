@@ -9,33 +9,21 @@ NS_LOG_COMPONENT_DEFINE("Core");
 Core::Core(std::string configFile)
 {
     this->m_configFile = std::move(configFile);
+    this->m_groupCastAddr = Ipv4Address("225.0.0.0");
 }
 
-Time
-Core::getStopTime()
-{
-    return this->m_stopTime;
-}
-
-bool
-Core::build()
+void
+Core::runSimulation()
 {
     NS_LOG_INFO("Reading config file: " << this->m_configFile);
     this->readConfigFile();
-    NS_LOG_INFO("Setup NetSetup");
     this->m_netSetup = std::make_unique<NetSetup>(this->m_config);
     NS_LOG_INFO("Setup logging");
     this->setupLogging();
     NS_LOG_INFO("Reading Simulation settings");
     this->readSimulationSettings();
-    NS_LOG_INFO("Create Vehicle nodes");
-    this->createVehicleNodes();
-    NS_LOG_INFO("Create RSU nodes");
-    this->createRsuNodes();
-    NS_LOG_INFO("Create Controller nodes");
-    this->createControllerNodes();
-    NS_LOG_INFO("Setup networking parameters");
-    return true;
+    NS_LOG_INFO("Starting Simulation");
+    this->run();
 }
 
 void
@@ -61,32 +49,32 @@ Core::readSimulationSettings()
     NS_LOG_DEBUG("Stream time: " << this->m_streamTime.GetMilliSeconds());
 }
 
-void
-Core::createVehicleNodes()
+void Core::createVehicleNodes()
 {
     toml_value vehicleSettings = this->findTable(CONST_COLUMNS::c_vehicleSettings);
 
-    activation_map_t activationTimes = getActivationData(vehicleSettings);
-    const auto vehicleSize = activationTimes.size();
-    NS_LOG_DEBUG("Vehicle size: " << vehicleSize);
+    this->m_vehicleActivationTimes = getActivationData(vehicleSettings);
+    this->m_numVehicles = this->m_vehicleActivationTimes.size();
+    NS_LOG_DEBUG("Vehicle size: " << this->m_numVehicles);
 
-    this->m_vehicleNodes = std::make_unique<NodeContainer>();
-    this->m_vehicleNodes->Create(vehicleSize);
+    this->m_vehicleNodes.Create(this->m_numVehicles);
+    for (uint32_t i = 0; i < this->m_vehicleNodes.GetN(); i++)
+    {
+        NS_LOG_DEBUG("Vehicle Node ID: " << this->m_vehicleNodes.Get(i)->GetId());
+    }
+    this->m_allNodes.Add(this->m_vehicleNodes);
     this->setupVehicleMobility(vehicleSettings);
-
-    this->m_vehicleNodes = this->m_netSetup->setupVehicularNet(std::move(this->m_vehicleNodes));
 }
 
-void
-Core::setupVehicleMobility(toml_value vehicleSettings)
+void Core::setupVehicleMobility(toml_value vehicleSettings)
 {
     std::string traceFile = toml::find<std::string>(vehicleSettings, CONST_COLUMNS::c_traceFile);
     NS_LOG_DEBUG("Reading Vehicle trace file: " << traceFile);
     this->m_vehicleMobility = std::make_unique<TraceMobility>(traceFile);
 
-    for (auto iter = this->m_vehicleNodes->Begin(); iter != this->m_vehicleNodes->End(); iter++)
+    for (uint32_t i = 0; i < this->m_vehicleNodes.GetN(); ++i)
     {
-        const Ptr<Node>& node = *iter;
+        Ptr<Node> node = this->m_vehicleNodes.Get(i);
         MobilityHelper mobilityHelper;
         mobilityHelper.SetMobilityModel("ns3::WaypointMobilityModel");
         mobilityHelper.Install(node);
@@ -94,27 +82,29 @@ Core::setupVehicleMobility(toml_value vehicleSettings)
     this->scheduleMobilityUpdate();
 }
 
-void
-Core::scheduleMobilityUpdate()
+void Core::scheduleMobilityUpdate()
 {
     Time currentSimTime = std::max(Time(0), Simulator::Now());
-    this->m_vehicleNodes =
-        this->m_vehicleMobility->addWaypointsBetween(currentSimTime,
-                                                     currentSimTime + this->m_streamTime,
-                                                     std::move(this->m_vehicleNodes));
+    this->m_vehicleMobility->addWaypointsBetween(currentSimTime,
+                                                     currentSimTime + this->m_streamTime, this->m_vehicleNodes);
+
     NS_LOG_DEBUG("Scheduling mobility update at " << currentSimTime + this->m_streamTime);
     Simulator::Schedule(currentSimTime + this->m_streamTime, &Core::scheduleMobilityUpdate, this);
 }
 
-void
-Core::createRsuNodes()
+void Core::createRsuNodes()
 {
     toml_value rsuSettings = this->findTable(CONST_COLUMNS::c_rsuSettings);
-    activation_map_t activationTimes = getActivationData(rsuSettings);
-    const auto rsuSize = activationTimes.size();
+    this->m_rsuActivationTimes = getActivationData(rsuSettings);
+    this->m_numRSUs = this->m_rsuActivationTimes.size();
+    NS_LOG_DEBUG("RSU size: " << this->m_numRSUs);
 
-    this->m_rsuNodes = std::make_unique<NodeContainer>();
-    this->m_rsuNodes->Create(rsuSize);
+    this->m_rsuNodes.Create(this->m_numRSUs);
+    for (auto iter = this->m_rsuNodes.Begin(); iter != this->m_rsuNodes.End(); ++iter)
+    {
+        NS_LOG_DEBUG("RSU Node ID: " << (*iter)->GetId());
+    }
+    this->m_allNodes.Add(this->m_rsuNodes);
     this->setupRSUPositions(rsuSettings);
 }
 
@@ -126,7 +116,7 @@ Core::setupRSUPositions(toml_value rsuSettings)
     PositionReader positionReader(positionFile);
     position_map_t positionData = positionReader.getPositionData();
 
-    for (auto iter = this->m_rsuNodes->Begin(); iter != this->m_rsuNodes->End(); iter++)
+    for (auto iter = this->m_rsuNodes.Begin(); iter != this->m_rsuNodes.End(); ++iter)
     {
         Ptr<Node> node = *iter;
         MobilityHelper mobilityHelper;
@@ -151,12 +141,14 @@ void
 Core::createControllerNodes()
 {
     toml_value controllerSettings = this->findTable(CONST_COLUMNS::c_controllerSettings);
-    activation_map_t activationTimes = getActivationData(controllerSettings);
-    const auto controllerSize = activationTimes.size();
+    this->m_rsuActivationTimes = getActivationData(controllerSettings);
+    this->m_numControllers = this->m_rsuActivationTimes.size();
 
-    this->m_controllerNodes = std::make_unique<NodeContainer>();
-    this->m_controllerNodes->Create(controllerSize);
+    // this->m_controllerNodes = NodeContainer();
+    NodeContainer controllerNodes;
+    controllerNodes.Create(this->m_numControllers);
     this->setupControllerPositions(controllerSettings);
+    this->m_allNodes.Add(controllerNodes);
 }
 
 void
@@ -168,8 +160,7 @@ Core::setupControllerPositions(toml_value controllerSettings)
     PositionReader positionReader(positionFile);
     position_map_t positionData = positionReader.getPositionData();
 
-    for (auto iter = this->m_controllerNodes->Begin(); iter != this->m_controllerNodes->End();
-         iter++)
+    for (auto iter = this->m_controllerNodes.Begin(); iter != this->m_controllerNodes.End(); iter++)
     {
         Ptr<Node> node = *iter;
         MobilityHelper mobilityHelper;
@@ -204,7 +195,7 @@ Core::setupLogging() const
         std::string current_env = getenv("NS_LOG");
         std::string new_env =
             current_env.append(":").append(log_component).append("=").append(logLevel);
-        setenv("NS_LOG", new_env.c_str(), true);
+        // setenv("NS_LOG", new_env.c_str(), true);
         LogComponentEnable(log_component.c_str(), nsLogLevel);
     }
 }
@@ -249,3 +240,168 @@ Core::getLogLevel(std::string logLevel)
         return LOG_LEVEL_ALL;
     }
 }
+
+void
+Core::run()
+{
+    NS_LOG_INFO("Create Vehicle nodes");
+    this->createVehicleNodes();
+    NS_LOG_INFO("Create RSU nodes");
+    this->createRsuNodes();
+    NS_LOG_INFO("Create Controller nodes");
+    this->createControllerNodes();
+    NS_LOG_INFO("Setting up NR module for all Nodes.");
+    toml_value networkSettings = this->findTable(CONST_COLUMNS::c_netSettings);
+
+    for (uint32_t i = 0; i < this->m_allNodes.GetN(); ++i)
+    {
+        NS_LOG_DEBUG("Node ID: " << this->m_allNodes.Get(i)->GetId());
+    }
+
+    Ptr<NrPointToPointEpcHelper> epcHelper = CreateObject<NrPointToPointEpcHelper>();
+    // Beam forming can be enabled later
+    // Ptr<IdealBeamformingHelper> beamHelper = CreateObject<IdealBeamformingHelper>();
+    Ptr<NrHelper> nrHelper = CreateObject<NrHelper>();
+    // nrHelper->SetBeamformingHelper(beamHelper);
+    NS_LOG_INFO("Setting up EPC...");
+    nrHelper->SetEpcHelper(epcHelper);
+
+    NS_LOG_DEBUG("Configuring operation band...");
+    OperationBandInfo operationBandInfo =
+        this->m_netSetup->updateNRHelperAndBuildOpBandInfo(networkSettings, nrHelper);
+    BandwidthPartInfoPtrVector bwpInfoVector = CcBwpCreator::GetAllBwps({operationBandInfo});
+
+    NS_LOG_INFO("Configuring Antenna...");
+    nrHelper = this->m_netSetup->configureAntenna(nrHelper);
+
+    NS_LOG_INFO("Configuring MAC and PHY...");
+    nrHelper = this->m_netSetup->configureMacAndPhy(nrHelper);
+
+    uint8_t bwpIdForGbrMcptt = 0;
+    nrHelper->SetBwpManagerTypeId(TypeId::LookupByName("ns3::NrSlBwpManagerUe"));
+    nrHelper->SetUeBwpManagerAlgorithmAttribute("GBR_MC_PUSH_TO_TALK",
+                                                UintegerValue(bwpIdForGbrMcptt));
+    std::set<uint8_t> bwpIds;
+    bwpIds.insert(bwpIdForGbrMcptt);
+
+    this->m_allDevices = nrHelper->InstallUeDevice(this->m_allNodes, bwpInfoVector);
+    this->m_allDevices.Add(this->m_controllerDevices);
+    for (auto it = this->m_allDevices.Begin(); it != this->m_allDevices.End(); ++it)
+    {
+        DynamicCast<NrUeNetDevice>(*it)->UpdateConfig(); // required as per docs
+    }
+
+    NS_LOG_INFO("Configuring sidelink...");
+    Ptr<NrSlHelper> slHelper = this->m_netSetup->configureSideLink();
+    slHelper->SetEpcHelper(epcHelper);
+    slHelper->PrepareUeForSidelink(this->m_allDevices, bwpIds);
+
+    NS_LOG_INFO("Configuring sidelink resource pool...");
+    LteRrcSap::SlBwpPoolConfigCommonNr slResourcePool = this->m_netSetup->configureResourcePool();
+
+    NS_LOG_INFO("Configure sidelink bandwidth part...");
+    LteRrcSap::SlFreqConfigCommonNr freqConfig = this->m_netSetup->configureBandwidth(slResourcePool, bwpIds);
+
+    NS_LOG_INFO("Configure other sidelink settings...");
+    LteRrcSap::SidelinkPreconfigNr sideLinkPreconfigNr = this->m_netSetup->configureSidelinkPreConfig();
+    sideLinkPreconfigNr.slPreconfigFreqInfoList[0] = freqConfig;
+
+    slHelper->InstallNrSlPreConfiguration(this->m_allDevices, sideLinkPreconfigNr);
+
+    NS_LOG_INFO("Separating devices into vehicle and RSU devices...");
+    this->segregateNetDevices();
+
+    int64_t stream = 1;
+    stream += nrHelper->AssignStreams(this->m_allDevices, stream);
+    stream += slHelper->AssignStreams(this->m_allDevices, stream);
+
+    NS_LOG_INFO("Configure Internet Stack...");
+
+    InternetStackHelper internet;
+    internet.Install(this->m_allNodes);
+    stream += internet.AssignStreams(this->m_allNodes, stream);
+
+    uint32_t dstL2Id = 255;
+    Ptr<LteSlTft> tft;
+    Ipv4InterfaceContainer ueIpIface;
+    NS_LOG_INFO("Assigning IP addresses...");
+    ueIpIface = epcHelper->AssignUeIpv4Address(this->m_allDevices);
+
+    // set the default gateway for the UE
+    Ipv4StaticRoutingHelper ipv4RoutingHelper;
+    for (uint32_t u = 0; u < this->m_allNodes.GetN(); ++u)
+    {
+        Ptr<Node> ueNode = this->m_allNodes.Get(u);
+        // Set the default gateway for the UE
+        Ptr<Ipv4StaticRouting> ueStaticRouting =
+            ipv4RoutingHelper.GetStaticRouting(ueNode->GetObject<Ipv4>());
+        ueStaticRouting->SetDefaultRoute(epcHelper->GetUeDefaultGatewayAddress(), 1);
+    }
+
+    NetDeviceContainer rxUes;
+    rxUes.Add(this->m_rsuDevices);
+    rxUes.Add(this->m_controllerDevices);
+
+    tft = Create<LteSlTft>(LteSlTft::Direction::TRANSMIT,
+                               LteSlTft::CommType::GroupCast,
+                               this->m_groupCastAddr,
+                               dstL2Id);
+    // Set Sidelink bearers
+    slHelper->ActivateNrSlBearer(Time::From(0), this->m_vehicleDevices, tft);
+
+    tft = Create<LteSlTft>(LteSlTft::Direction::RECEIVE,
+                           LteSlTft::CommType::GroupCast,
+                           this->m_groupCastAddr,
+                           dstL2Id);
+    // Set Sidelink bearers
+    slHelper->ActivateNrSlBearer(Time::From(0), this->m_rsuDevices, tft);
+
+    tft = Create<LteSlTft>(LteSlTft::Direction::RECEIVE,
+                           LteSlTft::CommType::GroupCast,
+                           this->m_groupCastAddr,
+                           dstL2Id);
+    // Set Sidelink bearers
+    slHelper->ActivateNrSlBearer(Time::From(0), this->m_controllerDevices, tft);
+
+    // Configure applications for vehicle nodes
+    NS_LOG_DEBUG("Setup Tx and Rx applications");
+    this->m_netSetup->setupTxApplications(this->m_vehicleNodes, this->m_groupCastAddr, this->m_vehicleActivationTimes);
+    this->m_netSetup->setupRxApplications(this->m_rsuNodes);
+    this->m_netSetup->setupRxApplications(this->m_controllerNodes);
+
+    NS_LOG_DEBUG("All nodes size: " << this->m_allNodes.GetN());
+
+    Simulator::Stop(this->m_stopTime);
+    Simulator::Run();
+    Simulator::Destroy();
+}
+
+void
+Core::segregateNetDevices()
+{
+    m_vehicleDevices = NetDeviceContainer();
+    m_rsuDevices = NetDeviceContainer();
+    m_controllerDevices = NetDeviceContainer();
+    for (auto it = this->m_allDevices.Begin(); it != this->m_allDevices.End(); ++it)
+    {
+        Ptr<NetDevice> device = *it;
+        // Last node is the controller node
+        if (device->GetNode()->GetId() == this->m_allNodes.GetN() - 1)
+        {
+            m_controllerDevices.Add(device);
+            continue;
+        }
+
+        // If not vehicle node, then it is an RSU node
+        if (device->GetNode()->GetId() < this->m_numVehicles)
+        {
+            m_vehicleDevices.Add(device);
+        }
+        else
+        {
+            m_rsuDevices.Add(device);
+        }
+    }
+}
+
+
