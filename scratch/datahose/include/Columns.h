@@ -9,6 +9,10 @@
 
 const std::string c_simSettings = "simulation_settings";
 const std::string c_logSettings = "log_settings";
+const std::string c_netSettings = "network_settings";
+const std::string c_antennaSettings = "antenna_settings";
+const std::string c_macPhySettings = "mac_phy_settings";
+const std::string c_sidelinkSettings = "sidelink_settings";
 
 const std::string c_vehicleSettings = "vehicle";
 const std::string c_rsuSettings = "rsu";
@@ -32,7 +36,5 @@ const std::string c_streamTime = "sim_streaming_step";
 
 const std::string c_logComponents = "log_components";
 const std::string c_logLevel = "log_level";
-
-const std::string c_packetInterval = "packet_interval";
 
 #endif // CONST_COLUMNS
