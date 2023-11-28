@@ -13,10 +13,9 @@ TraceMobility::TraceMobility(const std::string& filename)
 {
 }
 
-std::unique_ptr<NodeContainer>
-TraceMobility::addWaypointsBetween(const Time& startTime,
+void TraceMobility::addWaypointsBetween(const Time& startTime,
                                    const Time& endTime,
-                                   std::unique_ptr<NodeContainer> m_vehicleNodes)
+                                   NodeContainer vehicleNodes)
 {
     std::shared_ptr<arrow::Table> table =
         m_traceReader.streamDataBetween(startTime.GetMilliSeconds(), endTime.GetMilliSeconds());
@@ -24,7 +23,7 @@ TraceMobility::addWaypointsBetween(const Time& startTime,
     if (table->num_rows() == 0)
     {
         NS_LOG_DEBUG("No more input data, no waypoints are added.");
-        return m_vehicleNodes;
+        return;
     }
 
     auto xColumn = arrowUtils::getDoubleChunkedArray(table, CONST_COLUMNS::c_coordX);
@@ -41,9 +40,8 @@ TraceMobility::addWaypointsBetween(const Time& startTime,
 
         NS_LOG_DEBUG("Node ID: " << nodeId << " X: " << x << " Y: " << y << " Time: " << time);
 
-        Ptr<Node> node = m_vehicleNodes->Get(nodeId);
+        Ptr<Node> node = vehicleNodes.Get(nodeId);
         Ptr<WaypointMobilityModel> mobility = node->GetObject<WaypointMobilityModel>();
         mobility->AddWaypoint(Waypoint(MilliSeconds(time), Vector(x, y, 0)));
     }
-    return m_vehicleNodes;
 }
