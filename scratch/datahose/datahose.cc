@@ -31,12 +31,6 @@ int main (int argc, char *argv[])
     LogComponentEnable("Core", LOG_LEVEL_ALL);
 
     std::unique_ptr<Core> core = std::make_unique<Core>(config_file);
-    if (!core->build()) {
-        return 1;
-    }
-
-    Simulator::Stop(core->getStopTime());
-    Simulator::Run();
-    Simulator::Destroy();
+    core->runSimulation();
     return 0;
 }
