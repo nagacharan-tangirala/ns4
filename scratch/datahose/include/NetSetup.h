@@ -30,8 +30,6 @@
 
 using namespace ns3;
 
-typedef toml::basic_value<toml::discard_comments, std::map, std::vector> toml_value;
-
 class NetSetup
 {
   private:
@@ -65,10 +63,10 @@ class NetSetup
 
     LteRrcSap::SidelinkPreconfigNr configureSidelinkPreConfig();
 
-    void setupTxApplications(NodeContainer nodes,
+    ApplicationContainer setupTxApplications(NodeContainer nodes,
                              Ipv4Address groupCastAddr,
                              activation_map_t activationData);
 
-    void setupRxApplications(NodeContainer nodes);
+    ApplicationContainer setupRxApplications(NodeContainer nodes);
 };
 #endif // NS3_NETSETUP_H

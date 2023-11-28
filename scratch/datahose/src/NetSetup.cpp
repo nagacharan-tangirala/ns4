@@ -274,7 +274,7 @@ NetSetup::configureSidelinkPreConfig()
     return slPreConfigNr;
 }
 
-void
+ApplicationContainer
 NetSetup::setupTxApplications(NodeContainer nodes,
                               Ipv4Address groupCastAddr,
                               activation_map_t activationData)
@@ -311,9 +311,10 @@ NetSetup::setupTxApplications(NodeContainer nodes,
             std::cerr << "Cannot find data for node " << i << " in activationData" << std::endl;
         }
     }
+    return clientApps;
 }
 
-void
+ApplicationContainer
 NetSetup::setupRxApplications(NodeContainer nodes)
 {
     NS_LOG_DEBUG("Setting up RX applications");
@@ -326,4 +327,5 @@ NetSetup::setupRxApplications(NodeContainer nodes)
         serverApps.Add(sidelinkSink.Install(nodes.Get(i)));
         serverApps.Start(Seconds(0.0));
     }
+    return serverApps;
 }

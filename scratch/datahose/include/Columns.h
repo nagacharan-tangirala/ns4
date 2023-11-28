@@ -5,7 +5,11 @@
 #ifndef CONST_COLUMNS
 #define CONST_COLUMNS
 
+#include <map>
 #include <string>
+#include <toml.hpp>
+
+typedef toml::basic_value<toml::discard_comments, std::map, std::vector> toml_value;
 
 const std::string c_simSettings = "simulation_settings";
 const std::string c_logSettings = "log_settings";
@@ -13,6 +17,7 @@ const std::string c_netSettings = "network_settings";
 const std::string c_antennaSettings = "antenna_settings";
 const std::string c_macPhySettings = "mac_phy_settings";
 const std::string c_sidelinkSettings = "sidelink_settings";
+const std::string c_outputSettings = "output_settings";
 
 const std::string c_vehicleSettings = "vehicle";
 const std::string c_rsuSettings = "rsu";
@@ -36,5 +41,8 @@ const std::string c_streamTime = "sim_streaming_step";
 
 const std::string c_logComponents = "log_components";
 const std::string c_logLevel = "log_level";
+
+const std::string c_outputPath = "output_path";
+const std::string c_outputName = "output_name";
 
 #endif // CONST_COLUMNS

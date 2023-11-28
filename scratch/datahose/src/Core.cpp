@@ -149,11 +149,9 @@ Core::createControllerNodes()
     this->m_rsuActivationTimes = getActivationData(controllerSettings);
     this->m_numControllers = this->m_rsuActivationTimes.size();
 
-    // this->m_controllerNodes = NodeContainer();
-    NodeContainer controllerNodes;
-    controllerNodes.Create(this->m_numControllers);
+    this->m_controllerNodes.Create(this->m_numControllers);
     this->setupControllerPositions(controllerSettings);
-    this->m_allNodes.Add(controllerNodes);
+    this->m_allNodes.Add(this->m_controllerNodes);
 }
 
 void
@@ -257,11 +255,6 @@ Core::run()
     this->createControllerNodes();
     NS_LOG_INFO("Setting up NR module for all Nodes.");
     toml_value networkSettings = this->findTable(CONST_COLUMNS::c_netSettings);
-
-    for (uint32_t i = 0; i < this->m_allNodes.GetN(); ++i)
-    {
-        NS_LOG_DEBUG("Node ID: " << this->m_allNodes.Get(i)->GetId());
-    }
 
     Ptr<NrPointToPointEpcHelper> epcHelper = CreateObject<NrPointToPointEpcHelper>();
     // Beam forming can be enabled later
@@ -372,16 +365,27 @@ Core::run()
 
     // Configure applications for vehicle nodes
     NS_LOG_DEBUG("Setup Tx and Rx applications");
-    this->m_netSetup->setupTxApplications(this->m_vehicleNodes,
+    ApplicationContainer vehicleApps = this->m_netSetup->setupTxApplications(this->m_vehicleNodes,
                                           this->m_groupCastAddr,
                                           this->m_vehicleActivationTimes);
-    this->m_netSetup->setupRxApplications(this->m_rsuNodes);
-    this->m_netSetup->setupRxApplications(this->m_controllerNodes);
+    ApplicationContainer rsuApps = this->m_netSetup->setupRxApplications(this->m_rsuNodes);
+    ApplicationContainer contApps = this->m_netSetup->setupRxApplications(this->m_controllerNodes);
+    rsuApps.Add(contApps);
 
     NS_LOG_DEBUG("All nodes size: " << this->m_allNodes.GetN());
 
+    toml_value outputSettings = this->findTable(CONST_COLUMNS::c_outputSettings);
+    std::string outputPath = toml::find<std::string>(outputSettings, CONST_COLUMNS::c_outputPath);
+    std::string outputName = toml::find<std::string>(outputSettings, CONST_COLUMNS::c_outputName);
+    Outputter outputter(outputPath, outputName, this->m_stopTime);
+    outputter.configureDatabase(vehicleApps, rsuApps);
+
+    NS_LOG_DEBUG("Running the simulation...");
+
     Simulator::Stop(this->m_stopTime);
     Simulator::Run();
+
+    outputter.dumpCache();
     Simulator::Destroy();
 }
 
