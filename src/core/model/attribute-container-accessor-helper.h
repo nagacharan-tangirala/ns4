@@ -135,11 +135,11 @@ struct is_container : std::integral_constant<bool, has_const_iterator<T>::value 
  * \param [in]  memberContainer  The address of the data member.
  * \returns The AttributeAccessor.
  */
-template <typename V, typename T, template <typename...> class U, typename ...I,
-          typename = typename std::enable_if< ( is_container< U<I...> >::value ), void>::type >
+template <typename V, typename T, template <typename...> class U, typename ...Ix,
+          typename = typename std::enable_if< ( is_container< U<Ix...> >::value ), void>::type >
 inline
 Ptr<const AttributeAccessor>
-DoMakeAccessorHelperOne (U<I...> T::*memberContainer)
+DoMakeAccessorHelperOne (U<Ix...> T::*memberContainer)
 {
   /* AttributeAcessor implementation for a class member variable. */
   class MemberContainer : public AccessorHelper<T,V>
@@ -149,7 +149,7 @@ DoMakeAccessorHelperOne (U<I...> T::*memberContainer)
      * Construct from a class data member address.
      * \param [in] memberContainer The class data member address.
      */
-    MemberContainer (U<I...> T::*memberContainer)
+    MemberContainer (U<Ix...> T::*memberContainer)
       : AccessorHelper<T,V> (),
         m_memberContainer (memberContainer)
     {}
@@ -177,7 +177,7 @@ DoMakeAccessorHelperOne (U<I...> T::*memberContainer)
       return true;
     }
 
-    U<I...> T::*m_memberContainer;  // Address of the class data member.
+    U<Ix...> T::*m_memberContainer;  // Address of the class data member.
   };
   return Ptr<const AttributeAccessor> (new MemberContainer (memberContainer), false);
 }
