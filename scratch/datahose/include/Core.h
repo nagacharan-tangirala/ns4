@@ -14,21 +14,21 @@
 #include "PositionReader.h"
 #include "TraceMobility.h"
 
-#include <toml.hpp>
-
+#include "ns3/applications-module.h"
 #include "ns3/constant-position-mobility-model.h"
-#include "ns3/network-module.h"
 #include "ns3/core-module.h"
+#include "ns3/isotropic-antenna-model.h"
 #include "ns3/lte-sl-tft.h"
+#include "ns3/network-module.h"
 #include "ns3/node-container.h"
 #include "ns3/nr-helper.h"
+#include "ns3/nr-module.h"
 #include "ns3/nr-point-to-point-epc-helper.h"
 #include "ns3/nr-sl-helper.h"
 #include "ns3/nr-ue-net-device.h"
 #include "ns3/on-off-helper.h"
-#include "ns3/applications-module.h"
-#include "ns3/isotropic-antenna-model.h"
-#include "ns3/nr-module.h"
+
+#include <toml.hpp>
 
 using namespace ns3;
 

@@ -8,25 +8,25 @@
 #ifndef NS3_NETSETUP_H
 #define NS3_NETSETUP_H
 
-#include "NetworkParameters.h"
-#include "Columns.h"
 #include "ActivationReader.h"
+#include "Columns.h"
+#include "NetworkParameters.h"
 
-#include <toml.hpp>
-
+#include "ns3/applications-module.h"
 #include "ns3/constant-position-mobility-model.h"
-#include "ns3/network-module.h"
 #include "ns3/core-module.h"
+#include "ns3/isotropic-antenna-model.h"
 #include "ns3/lte-sl-tft.h"
+#include "ns3/network-module.h"
 #include "ns3/node-container.h"
 #include "ns3/nr-helper.h"
+#include "ns3/nr-module.h"
 #include "ns3/nr-point-to-point-epc-helper.h"
 #include "ns3/nr-sl-helper.h"
 #include "ns3/nr-ue-net-device.h"
 #include "ns3/on-off-helper.h"
-#include "ns3/applications-module.h"
-#include "ns3/isotropic-antenna-model.h"
-#include "ns3/nr-module.h"
+
+#include <toml.hpp>
 
 using namespace ns3;
 
@@ -42,7 +42,8 @@ class NetSetup
 
     toml_value findTable(const std::string& tableName) const;
 
-    void GetSlBitmapFromString (std::string slBitMapString, std::vector<std::bitset<1>> &slBitMapVector);
+    void GetSlBitmapFromString(std::string slBitMapString,
+                               std::vector<std::bitset<1>>& slBitMapVector);
 
   public:
     NetSetup(toml_value config);
@@ -64,7 +65,9 @@ class NetSetup
 
     LteRrcSap::SidelinkPreconfigNr configureSidelinkPreConfig();
 
-    void setupTxApplications(NodeContainer nodes, Ipv4Address groupCastAddr, activation_map_t activationData);
+    void setupTxApplications(NodeContainer nodes,
+                             Ipv4Address groupCastAddr,
+                             activation_map_t activationData);
 
     void setupRxApplications(NodeContainer nodes);
 };

@@ -5,11 +5,11 @@
 
 using namespace ns3;
 
-NS_LOG_COMPONENT_DEFINE ("NetSetup");
+NS_LOG_COMPONENT_DEFINE("NetSetup");
 
-NetSetup::NetSetup (toml_value config)
+NetSetup::NetSetup(toml_value config)
 {
-  this->m_config = config;
+    this->m_config = config;
 }
 
 toml_value
@@ -20,7 +20,7 @@ NetSetup::findTable(const std::string& tableName) const
 
 OperationBandInfo
 NetSetup::updateNRHelperAndBuildOpBandInfo(const toml_value& networkSettings,
-                                       Ptr<NrHelper>& nrHelper) const
+                                           Ptr<NrHelper>& nrHelper) const
 {
     CcBwpCreator ccBwpCreator;
     const uint8_t numCcPerBand = 1;
@@ -93,11 +93,11 @@ NetSetup::configureMacAndPhy(Ptr<NrHelper> nrHelper)
     nrHelper->SetUePhyAttribute("TxPower", DoubleValue(txPower));
 
     NS_LOG_DEBUG("MAC and PHY setup: "
-                     << "sensingEnabled: " << sensingEnabled << ", t1: " << t1 << ", t2: " << t2
-                     << ", reservationPeriod: " << reservationPeriod << ", sidelinkProcesses: "
-                     << sidelinkProcesses << ", thresholdPsschRsrp: " << thresholdPsschRsrp
-                     << ", blindReTxEnabled: " << blindReTxEnabled << ", activePoolId: " << activePoolId
-                     << ", txPower: " << txPower << "dBm");
+                 << "sensingEnabled: " << sensingEnabled << ", t1: " << t1 << ", t2: " << t2
+                 << ", reservationPeriod: " << reservationPeriod << ", sidelinkProcesses: "
+                 << sidelinkProcesses << ", thresholdPsschRsrp: " << thresholdPsschRsrp
+                 << ", blindReTxEnabled: " << blindReTxEnabled << ", activePoolId: " << activePoolId
+                 << ", txPower: " << txPower << "dBm");
 
     return nrHelper;
 }
@@ -131,14 +131,16 @@ NetSetup::configureResourcePool()
         Create<NrSlCommPreconfigResourcePoolFactory>();
 
     std::string sl_bitmap = toml::find<std::string>(slSettings, netParameters::n_slBitMap);
-    std::vector<std::bitset<1> > slBitMapVector;
+    std::vector<std::bitset<1>> slBitMapVector;
     this->GetSlBitmapFromString(sl_bitmap, slBitMapVector);
     poolFactory->SetSlTimeResources(slBitMapVector);
 
     uint16_t slSensingWindow = toml::find<uint16_t>(slSettings, netParameters::n_slSensingWindow);
-    uint16_t slSelectionWindow = toml::find<uint16_t>(slSettings, netParameters::n_slSelectionWindow);
+    uint16_t slSelectionWindow =
+        toml::find<uint16_t>(slSettings, netParameters::n_slSelectionWindow);
     uint16_t slSubChannelSize = toml::find<uint16_t>(slSettings, netParameters::n_slSubChannelSize);
-    uint16_t slMaxNumPerReserve = toml::find<uint16_t>(slSettings, netParameters::n_slMaxNumPerReserve);
+    uint16_t slMaxNumPerReserve =
+        toml::find<uint16_t>(slSettings, netParameters::n_slMaxNumPerReserve);
 
     poolFactory->SetSlSensingWindow(slSensingWindow);
     poolFactory->SetSlSelectionWindow(slSelectionWindow);
@@ -165,36 +167,36 @@ NetSetup::configureResourcePool()
 }
 
 void
-NetSetup::GetSlBitmapFromString (std::string slBitMapString, std::vector <std::bitset<1> > &slBitMapVector)
+NetSetup::GetSlBitmapFromString(std::string slBitMapString,
+                                std::vector<std::bitset<1>>& slBitMapVector)
 {
-    static std::unordered_map<std::string, uint8_t> lookupTable =
-        {
-            { "0", 0 },
-            { "1", 1 },
-        };
+    static std::unordered_map<std::string, uint8_t> lookupTable = {
+        {"0", 0},
+        {"1", 1},
+    };
 
-    std::stringstream ss (slBitMapString);
+    std::stringstream ss(slBitMapString);
     std::string token;
     std::vector<std::string> extracted;
 
-    while (std::getline (ss, token, '|'))
+    while (std::getline(ss, token, '|'))
     {
-        extracted.push_back (token);
+        extracted.push_back(token);
     }
 
-    for (const auto & v : extracted)
+    for (const auto& v : extracted)
     {
-        if (lookupTable.find (v) == lookupTable.end ())
+        if (lookupTable.find(v) == lookupTable.end())
         {
-            NS_FATAL_ERROR ("Bit type " << v << " not valid. Valid values are: 0 and 1");
+            NS_FATAL_ERROR("Bit type " << v << " not valid. Valid values are: 0 and 1");
         }
-        slBitMapVector.push_back (lookupTable[v] & 0x01);
+        slBitMapVector.push_back(lookupTable[v] & 0x01);
     }
 }
 
 LteRrcSap::SlFreqConfigCommonNr
 NetSetup::configureBandwidth(LteRrcSap::SlBwpPoolConfigCommonNr slResourcePool,
-                         std::set<uint8_t> bwpIds)
+                             std::set<uint8_t> bwpIds)
 {
     toml_value slSettings = this->findTable(CONST_COLUMNS::c_sidelinkSettings);
 
@@ -273,7 +275,9 @@ NetSetup::configureSidelinkPreConfig()
 }
 
 void
-NetSetup::setupTxApplications(NodeContainer nodes, Ipv4Address groupCastAddr, activation_map_t activationData)
+NetSetup::setupTxApplications(NodeContainer nodes,
+                              Ipv4Address groupCastAddr,
+                              activation_map_t activationData)
 {
     NS_LOG_DEBUG("Setting up TX applications");
     Ptr<UniformRandomVariable> startTimeSeconds = CreateObject<UniformRandomVariable>();

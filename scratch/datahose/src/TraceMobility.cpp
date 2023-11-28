@@ -13,7 +13,8 @@ TraceMobility::TraceMobility(const std::string& filename)
 {
 }
 
-void TraceMobility::addWaypointsBetween(const Time& startTime,
+void
+TraceMobility::addWaypointsBetween(const Time& startTime,
                                    const Time& endTime,
                                    NodeContainer vehicleNodes)
 {

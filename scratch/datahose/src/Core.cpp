@@ -49,7 +49,8 @@ Core::readSimulationSettings()
     NS_LOG_DEBUG("Stream time: " << this->m_streamTime.GetMilliSeconds());
 }
 
-void Core::createVehicleNodes()
+void
+Core::createVehicleNodes()
 {
     toml_value vehicleSettings = this->findTable(CONST_COLUMNS::c_vehicleSettings);
 
@@ -66,7 +67,8 @@ void Core::createVehicleNodes()
     this->setupVehicleMobility(vehicleSettings);
 }
 
-void Core::setupVehicleMobility(toml_value vehicleSettings)
+void
+Core::setupVehicleMobility(toml_value vehicleSettings)
 {
     std::string traceFile = toml::find<std::string>(vehicleSettings, CONST_COLUMNS::c_traceFile);
     NS_LOG_DEBUG("Reading Vehicle trace file: " << traceFile);
@@ -82,17 +84,20 @@ void Core::setupVehicleMobility(toml_value vehicleSettings)
     this->scheduleMobilityUpdate();
 }
 
-void Core::scheduleMobilityUpdate()
+void
+Core::scheduleMobilityUpdate()
 {
     Time currentSimTime = std::max(Time(0), Simulator::Now());
     this->m_vehicleMobility->addWaypointsBetween(currentSimTime,
-                                                     currentSimTime + this->m_streamTime, this->m_vehicleNodes);
+                                                 currentSimTime + this->m_streamTime,
+                                                 this->m_vehicleNodes);
 
     NS_LOG_DEBUG("Scheduling mobility update at " << currentSimTime + this->m_streamTime);
     Simulator::Schedule(currentSimTime + this->m_streamTime, &Core::scheduleMobilityUpdate, this);
 }
 
-void Core::createRsuNodes()
+void
+Core::createRsuNodes()
 {
     toml_value rsuSettings = this->findTable(CONST_COLUMNS::c_rsuSettings);
     this->m_rsuActivationTimes = getActivationData(rsuSettings);
@@ -300,10 +305,12 @@ Core::run()
     LteRrcSap::SlBwpPoolConfigCommonNr slResourcePool = this->m_netSetup->configureResourcePool();
 
     NS_LOG_INFO("Configure sidelink bandwidth part...");
-    LteRrcSap::SlFreqConfigCommonNr freqConfig = this->m_netSetup->configureBandwidth(slResourcePool, bwpIds);
+    LteRrcSap::SlFreqConfigCommonNr freqConfig =
+        this->m_netSetup->configureBandwidth(slResourcePool, bwpIds);
 
     NS_LOG_INFO("Configure other sidelink settings...");
-    LteRrcSap::SidelinkPreconfigNr sideLinkPreconfigNr = this->m_netSetup->configureSidelinkPreConfig();
+    LteRrcSap::SidelinkPreconfigNr sideLinkPreconfigNr =
+        this->m_netSetup->configureSidelinkPreConfig();
     sideLinkPreconfigNr.slPreconfigFreqInfoList[0] = freqConfig;
 
     slHelper->InstallNrSlPreConfiguration(this->m_allDevices, sideLinkPreconfigNr);
@@ -343,9 +350,9 @@ Core::run()
     rxUes.Add(this->m_controllerDevices);
 
     tft = Create<LteSlTft>(LteSlTft::Direction::TRANSMIT,
-                               LteSlTft::CommType::GroupCast,
-                               this->m_groupCastAddr,
-                               dstL2Id);
+                           LteSlTft::CommType::GroupCast,
+                           this->m_groupCastAddr,
+                           dstL2Id);
     // Set Sidelink bearers
     slHelper->ActivateNrSlBearer(Time::From(0), this->m_vehicleDevices, tft);
 
@@ -365,7 +372,9 @@ Core::run()
 
     // Configure applications for vehicle nodes
     NS_LOG_DEBUG("Setup Tx and Rx applications");
-    this->m_netSetup->setupTxApplications(this->m_vehicleNodes, this->m_groupCastAddr, this->m_vehicleActivationTimes);
+    this->m_netSetup->setupTxApplications(this->m_vehicleNodes,
+                                          this->m_groupCastAddr,
+                                          this->m_vehicleActivationTimes);
     this->m_netSetup->setupRxApplications(this->m_rsuNodes);
     this->m_netSetup->setupRxApplications(this->m_controllerNodes);
 
@@ -403,5 +412,3 @@ Core::segregateNetDevices()
         }
     }
 }
-
-
