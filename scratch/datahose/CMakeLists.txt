@@ -12,7 +12,10 @@ add_library(
         src/TraceMobility.cpp
         src/ActivationReader.cpp
         src/PositionReader.cpp
+        src/NetSetup.cpp
+        src/Outputter.cpp
         include/TraceMobility.h
+        include/Outputter.h
         include/Core.h
         include/Columns.h
         include/TraceReader.h
@@ -21,10 +24,28 @@ add_library(
         include/ArrowUtils.h
         include/NetworkParameters.h
         include/NetSetup.h
-        src/NetSetup.cpp
+)
+
+add_library(
+        output-lib
+        lib/ue-mac-pscch-tx-output-stats.cc
+        lib/ue-mac-pscch-tx-output-stats.h
+        lib/ue-phy-pscch-rx-output-stats.cc
+        lib/ue-phy-pscch-rx-output-stats.h
+        lib/ue-rlc-rx-output-stats.cc
+        lib/ue-rlc-rx-output-stats.h
+        lib/ue-to-ue-pkt-txrx-output-stats.cc
+        lib/ue-to-ue-pkt-txrx-output-stats.h
+        lib/v2x-kpi.cc
+        lib/v2x-kpi.h
+        lib/ue-mac-pssch-tx-output-stats.cc
+        lib/ue-mac-pssch-tx-output-stats.h
+        lib/ue-phy-pssch-rx-output-stats.cc
+        lib/ue-phy-pssch-rx-output-stats.h
 )
 
 INCLUDE_DIRECTORIES(${CMAKE_CURRENT_SOURCE_DIR}/include)
+INCLUDE_DIRECTORIES(${CMAKE_CURRENT_SOURCE_DIR}/lib)
 
 # Link the custom library to the scratch executable
 build_exec(
@@ -32,6 +53,7 @@ build_exec(
     SOURCE_FILES datahose.cc
     LIBRARIES_TO_LINK
         core-lib
+        output-lib
         arrow
         parquet
         ${libcore}
