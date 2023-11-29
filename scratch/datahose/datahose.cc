@@ -15,6 +15,7 @@
  */
 
 #include "include/Core.h"
+#include <chrono>
 
 using namespace ns3;
 
@@ -31,6 +32,10 @@ int main (int argc, char *argv[])
     LogComponentEnable("Core", LOG_LEVEL_ALL);
 
     std::unique_ptr<Core> core = std::make_unique<Core>(config_file);
+
+    auto start = std::chrono::steady_clock::now();
     core->runSimulation();
+    auto end = std::chrono::steady_clock::now();
+    std::cout << "It took " << std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count() << " milliseconds" << std::endl;
     return 0;
 }
