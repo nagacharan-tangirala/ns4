@@ -101,6 +101,7 @@ void
 Core::createRsuNodes()
 {
     toml_value rsuSettings = this->findTable(CONST_COLUMNS::c_rsuSettings);
+
     this->m_rsuActivationTimes = getActivationData(rsuSettings);
     this->m_numRSUs = this->m_rsuActivationTimes.size();
     NS_LOG_DEBUG("RSU size: " << this->m_numRSUs);
@@ -284,7 +285,6 @@ Core::run()
     bwpIds.insert(bwpIdForGbrMcptt);
 
     this->m_allDevices = nrHelper->InstallUeDevice(this->m_allNodes, bwpInfoVector);
-    this->m_allDevices.Add(this->m_controllerDevices);
     for (auto it = this->m_allDevices.Begin(); it != this->m_allDevices.End(); ++it)
     {
         DynamicCast<NrUeNetDevice>(*it)->UpdateConfig(); // required as per docs
@@ -308,9 +308,6 @@ Core::run()
     sideLinkPreconfigNr.slPreconfigFreqInfoList[0] = freqConfig;
 
     slHelper->InstallNrSlPreConfiguration(this->m_allDevices, sideLinkPreconfigNr);
-
-    NS_LOG_INFO("Separating devices into vehicle and RSU devices...");
-    this->segregateNetDevices();
 
     int64_t stream = 1;
     stream += nrHelper->AssignStreams(this->m_allDevices, stream);
@@ -339,6 +336,9 @@ Core::run()
         ueStaticRouting->SetDefaultRoute(epcHelper->GetUeDefaultGatewayAddress(), 1);
     }
 
+    NS_LOG_INFO("Separating devices into vehicle and RSU devices...");
+    this->segregateNetDevices();
+
     tft = Create<LteSlTft>(LteSlTft::Direction::TRANSMIT,
                            LteSlTft::CommType::GroupCast,
                            this->m_groupCastAddr,
@@ -366,9 +366,9 @@ Core::run()
         this->m_netSetup->setupTxApplications(this->m_vehicleNodes,
                                               this->m_groupCastAddr,
                                               this->m_vehicleActivationTimes);
-    ApplicationContainer rsuApps = this->m_netSetup->setupRxUdpApplications(this->m_rsuNodes);
+    ApplicationContainer rsuApps = this->m_netSetup->setupRxApplications(this->m_rsuNodes);
     ApplicationContainer contApps = this->m_netSetup->setupRxApplications(this->m_controllerNodes);
-    rsuApps.Add(contApps);
+    // rsuApps.Add(contApps);
 
     NS_LOG_DEBUG("All nodes size: " << this->m_allNodes.GetN());
 
@@ -427,7 +427,6 @@ Core::run()
                                      ->GetObject<Ipv4L3Protocol>()
                                      ->GetAddress(1, 0)
                                      .GetLocal();
-        NS_LOG_DEBUG("Setting Tx trace for address: " << localAddrs);
         vehicleApps.Get(ac)->TraceConnect("TxWithSeqTsSize",
                                           "tx",
                                           MakeBoundCallback(&Outputter::UePacketTraceDb,
@@ -441,7 +440,7 @@ Core::run()
     {
         Ipv4Address localAddrs =
             rsuApps.Get(ac)->GetNode()->GetObject<Ipv4L3Protocol>()->GetAddress(1, 0).GetLocal();
-        NS_LOG_DEBUG("Setting Rx trace for address: " << localAddrs);
+        NS_LOG_DEBUG("Connecting to trace for node: " << rsuApps.Get(ac)->GetNode()->GetId());
         rsuApps.Get(ac)->TraceConnect("RxWithSeqTsSize",
                                       "rx",
                                       MakeBoundCallback(&Outputter::UePacketTraceDb,

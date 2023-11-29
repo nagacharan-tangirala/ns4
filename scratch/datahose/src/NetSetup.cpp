@@ -366,6 +366,7 @@ NetSetup::setupRxApplications(NodeContainer nodes)
     sidelinkSink.SetAttribute("EnableSeqTsSizeHeader", BooleanValue(true));
     for (uint32_t i = 0; i < nodes.GetN(); i++)
     {
+        NS_LOG_DEBUG("Installing RX application on node " << nodes.Get(i)->GetId());
         serverApps.Add(sidelinkSink.Install(nodes.Get(i)));
         serverApps.Start(Seconds(0.0));
     }
