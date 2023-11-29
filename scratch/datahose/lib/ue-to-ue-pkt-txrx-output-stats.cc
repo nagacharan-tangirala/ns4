@@ -97,7 +97,6 @@ UeToUePktTxRxOutputStats::WriteCache ()
       m_db->SpinPrepare (&stmt, "INSERT INTO " + m_tableName + " VALUES (?,?,?,?,?,?,?,?,?,?,?,?);");
       oss.str ("");
       ret = m_db->Bind (stmt, 1, v.timeSec);
-      NS_LOG_DEBUG("UeToUePktTxRxOutputStats: timeSec: " << v.timeSec);
       NS_ABORT_UNLESS (ret);
       ret = m_db->Bind (stmt, 2, v.txRx);
       NS_ABORT_UNLESS (ret);
