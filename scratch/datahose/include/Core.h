@@ -11,9 +11,9 @@
 #include "ActivationReader.h"
 #include "Columns.h"
 #include "NetSetup.h"
+#include "Outputter.h"
 #include "PositionReader.h"
 #include "TraceMobility.h"
-#include "Outputter.h"
 
 #include "ns3/applications-module.h"
 #include "ns3/constant-position-mobility-model.h"
