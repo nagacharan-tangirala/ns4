@@ -110,8 +110,8 @@ Core::createRsuNodes()
     {
         NS_LOG_DEBUG("RSU Node ID: " << (*iter)->GetId());
     }
-    this->m_allNodes.Add(this->m_rsuNodes);
     this->setupRSUPositions(rsuSettings);
+    this->m_allNodes.Add(this->m_rsuNodes);
 }
 
 void
