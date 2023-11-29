@@ -32,7 +32,7 @@ ActivationReader::getActivationTimes()
         NS_LOG_DEBUG("Node ID: " << nodeId << " On time: " << onTime.GetMilliSeconds()
                                  << " Off time: " << offTime.GetMilliSeconds());
         activationTimes.insert(
-            std::make_pair(nodeId, std::make_pair(MilliSeconds(0), MilliSeconds(0))));
+            std::make_pair(nodeId, std::make_pair(onTime, offTime)));
     }
     return activationTimes;
 }
