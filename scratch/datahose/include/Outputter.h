@@ -32,9 +32,6 @@ using namespace ns3;
 class Outputter
 {
   private:
-    std::string m_outputPath;
-    std::string m_outputName;
-    Time m_duration;
     UeMacPscchTxOutputStats m_pscchStats;
     UeMacPsschTxOutputStats m_psschStats;
 
@@ -46,12 +43,6 @@ class Outputter
     V2xKpi m_v2xKpi;
 
   public:
-    Outputter(std::string outputPath, std::string outputName, Time duration);
-
-    void dumpCache();
-
-    void configureDatabase(ApplicationContainer clientApps, ApplicationContainer serverApps);
-
     /**
      * \brief Method to listen the trace SlPscchScheduling of NrUeMac, which gets
      *        triggered upon the transmission of SCI format 1-A from UE MAC.
