@@ -346,8 +346,8 @@ Core::run()
     // Set Sidelink bearers
     slHelper->ActivateNrSlBearer(Time::From(0), this->m_vehicleDevices, tft);
 
-    tft = Create<LteSlTft>(LteSlTft::Direction::BIDIRECTIONAL,
-                           LteSlTft::CommType::Uincast,
+    tft = Create<LteSlTft>(LteSlTft::Direction::RECEIVE,
+                           LteSlTft::CommType::GroupCast,
                            this->m_groupCastAddr,
                            dstL2Id);
     // Set Sidelink bearers
