@@ -190,7 +190,7 @@ NetSetup::GetSlBitmapFromString(std::string slBitMapString,
         {
             NS_FATAL_ERROR("Bit type " << v << " not valid. Valid values are: 0 and 1");
         }
-        slBitMapVector.push_back(lookupTable[v] & 0x01);
+        slBitMapVector.emplace_back(lookupTable[v] & 0x01);
     }
 }
 
