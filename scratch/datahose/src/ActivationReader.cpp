@@ -42,7 +42,7 @@ ActivationReader::getActivationTimes()
             NS_LOG_UNCOND("Overwriting activation times for node " << nodeId);
         }
         activationTimes.insert(
-            std::make_pair(nodeId, std::make_pair(onTime, offTime)));
+            std::make_pair(nodeId, std::make_pair(onTimeMs, offTimeMs)));
     }
     return activationTimes;
 }
