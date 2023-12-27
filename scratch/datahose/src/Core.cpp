@@ -235,6 +235,7 @@ Core::run()
     bwpIds.insert(bwpIdForGbrMcptt);
 
     this->m_allDevices = nrHelper->InstallUeDevice(this->m_allNodes, bwpInfoVector);
+
     for (auto it = this->m_allDevices.Begin(); it != this->m_allDevices.End(); ++it)
     {
         DynamicCast<NrUeNetDevice>(*it)->UpdateConfig(); // required as per docs

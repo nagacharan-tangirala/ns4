@@ -24,6 +24,8 @@ add_library(
         include/ArrowUtils.h
         include/NetworkParameters.h
         include/NetSetup.h
+        include/LinkReader.h
+        src/LinkReader.cpp
 )
 
 add_library(
