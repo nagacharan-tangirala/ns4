@@ -373,7 +373,7 @@ Core::run()
     NS_LOG_DEBUG("Outputter: Connecting to Mobility trace source");
     Outputter::RecordMobility(true, mobilityFileName);
 
-    NS_LOG_DEBUG("Running the simulation...");
+    NS_LOG_INFO("Running the simulation...");
 
     Simulator::Stop(this->m_stopTime);
     Simulator::Run();
