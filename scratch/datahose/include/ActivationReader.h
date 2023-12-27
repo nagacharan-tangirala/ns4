@@ -23,11 +23,13 @@
 using namespace ns3;
 
 typedef std::map<uint32_t, std::pair<Time, Time>> activation_map_t;
+typedef std::map<uint64_t, uint64_t> node_id_map_t; // <pavenet nodeId, ns3 nodeId>
 
 class ActivationReader
 {
   private:
     std::shared_ptr<arrow::io::ReadableFile> m_activationFile;
+    node_id_map_t m_nodeIdMap;
 
     std::shared_ptr<arrow::Table> readActivationData();
 
@@ -36,8 +38,7 @@ class ActivationReader
 
     activation_map_t getActivationTimes();
 
-    Time getTimeFromTimeColumn(const std::shared_ptr<arrow::ChunkedArray>& timeColumn,
-                               int position) const;
+    node_id_map_t getNodeIdMap() { return this->m_nodeIdMap; }
 };
 
 #endif // NS3_ACTIVATION_READER_H
