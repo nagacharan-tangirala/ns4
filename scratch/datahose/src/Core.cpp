@@ -145,48 +145,6 @@ Core::setupRSUPositions(toml_value rsuSettings)
 }
 
 void
-Core::createControllerNodes()
-{
-    toml_value controllerSettings = this->findTable(CONST_COLUMNS::c_controllerSettings);
-    this->m_rsuActivationTimes = getActivationData(controllerSettings);
-    this->m_numControllers = this->m_rsuActivationTimes.size();
-
-    this->m_controllerNodes.Create(this->m_numControllers);
-    this->setupControllerPositions(controllerSettings);
-    this->m_allNodes.Add(this->m_controllerNodes);
-}
-
-void
-Core::setupControllerPositions(toml_value controllerSettings)
-{
-    std::string positionFile =
-        toml::find<std::string>(controllerSettings, CONST_COLUMNS::c_positionFile);
-    NS_LOG_DEBUG("Reading Position file: " << positionFile);
-    PositionReader positionReader(positionFile);
-    position_map_t positionData = positionReader.getPositionData();
-
-    for (auto iter = this->m_controllerNodes.Begin(); iter != this->m_controllerNodes.End(); iter++)
-    {
-        Ptr<Node> node = *iter;
-        MobilityHelper mobilityHelper;
-        mobilityHelper.SetMobilityModel("ns3::ConstantPositionMobilityModel");
-        mobilityHelper.Install(node);
-        Ptr<ConstantPositionMobilityModel> mobility =
-            node->GetObject<ConstantPositionMobilityModel>();
-
-        auto position = positionData.find(node->GetId());
-        if (position != positionData.end())
-        {
-            mobility->SetPosition(Vector(position->second.first, position->second.second, 0));
-        }
-        else
-        {
-            NS_ASSERT_MSG(false, "No position data found for controller: " << node->GetId());
-        }
-    }
-}
-
-void
 Core::setupLogging() const
 {
     toml_value log_settings = this->findTable(CONST_COLUMNS::c_logSettings);
@@ -203,17 +161,6 @@ Core::setupLogging() const
         // setenv("NS_LOG", new_env.c_str(), true);
         LogComponentEnable(log_component.c_str(), nsLogLevel);
     }
-}
-
-activation_map_t
-Core::getActivationData(const toml_value& nodeSettings)
-{
-    std::string activationFile =
-        toml::find<std::string>(nodeSettings, CONST_COLUMNS::c_activationFile);
-    NS_LOG_DEBUG("Reading Activation file: " << activationFile);
-    ActivationReader activationReader(activationFile);
-    activation_map_t activationTimes = activationReader.getActivationTimes();
-    return activationTimes;
 }
 
 LogLevel
