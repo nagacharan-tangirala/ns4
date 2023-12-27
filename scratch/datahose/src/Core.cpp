@@ -267,66 +267,135 @@ Core::run()
 
     InternetStackHelper internet;
     internet.Install(this->m_allNodes);
-    stream += internet.AssignStreams(this->m_allNodes, stream);
-
-    uint32_t dstL2Id = 255;
-    Ptr<LteSlTft> tft;
-    Ipv4InterfaceContainer ueIpIface;
-    NS_LOG_INFO("Assigning IP addresses...");
-    ueIpIface = epcHelper->AssignUeIpv4Address(this->m_allDevices);
-
-    // set the default gateway for the UE
-    Ipv4StaticRoutingHelper ipv4RoutingHelper;
-    for (uint32_t u = 0; u < this->m_allNodes.GetN(); ++u)
-    {
-        Ptr<Node> ueNode = this->m_allNodes.Get(u);
-        // Set the default gateway for the UE
-        Ptr<Ipv4StaticRouting> ueStaticRouting =
-            ipv4RoutingHelper.GetStaticRouting(ueNode->GetObject<Ipv4>());
-        ueStaticRouting->SetDefaultRoute(epcHelper->GetUeDefaultGatewayAddress(), 1);
-    }
 
     NS_LOG_INFO("Separating devices into vehicle and RSU devices...");
     this->segregateNetDevices();
 
-    tft = Create<LteSlTft>(LteSlTft::Direction::TRANSMIT,
-                           LteSlTft::CommType::GroupCast,
-                           this->m_groupCastAddr,
-                           dstL2Id);
-    // Set Sidelink bearers
-    slHelper->ActivateNrSlBearer(Time::From(0), this->m_vehicleDevices, tft);
+    uint32_t dstL2Id = 225;
+    Ipv4InterfaceContainer ueIpIface;
 
-    tft = Create<LteSlTft>(LteSlTft::Direction::RECEIVE,
-                           LteSlTft::CommType::GroupCast,
-                           this->m_groupCastAddr,
-                           dstL2Id);
-    // Set Sidelink bearers
-    slHelper->ActivateNrSlBearer(Time::From(0), this->m_rsuDevices, tft);
+    Ipv4AddressHelper ipv4;
+    ipv4.SetBase ("10.1.0.0", "255.255.0.0");
+    NS_LOG_INFO("Assigning IP addresses to vehicles...");
+    Ipv4InterfaceContainer vehContainer = ipv4.Assign (this->m_vehicleDevices);
+    ipv4.SetBase ("10.2.0.0", "255.255.0.0");
+    Ipv4InterfaceContainer rsuContainer = ipv4.Assign (this->m_rsuDevices);
 
-    tft = Create<LteSlTft>(LteSlTft::Direction::RECEIVE,
-                           LteSlTft::CommType::GroupCast,
-                           this->m_groupCastAddr,
-                           dstL2Id);
-    // Set Sidelink bearers
-    slHelper->ActivateNrSlBearer(Time::From(0), this->m_controllerDevices, tft);
+    Ptr<LteSlTft> tft;
 
-    // Configure applications for vehicle nodes
-    NS_LOG_DEBUG("Setup Tx and Rx applications");
-    ApplicationContainer vehicleApps =
-        this->m_netSetup->setupTxApplications(this->m_vehicleNodes,
-                                              this->m_groupCastAddr,
-                                              this->m_vehicleActivationTimes);
-    ApplicationContainer rsuApps = this->m_netSetup->setupRxApplications(this->m_rsuNodes);
-    ApplicationContainer contApps = this->m_netSetup->setupRxApplications(this->m_controllerNodes);
-    // rsuApps.Add(contApps);
-
-    NS_LOG_DEBUG("All nodes size: " << this->m_allNodes.GetN());
-
+    NS_LOG_INFO("Reading output settings");
     toml_value outputSettings = this->findTable(CONST_COLUMNS::c_outputSettings);
     std::string outputPath = toml::find<std::string>(outputSettings, CONST_COLUMNS::c_outputPath);
     std::string outputName = toml::find<std::string>(outputSettings, CONST_COLUMNS::c_outputName);
     SQLiteOutput db(outputPath + outputName + ".db");
     Outputter outputter;
+
+    NS_LOG_INFO("Reading V2R links");
+    toml_value vehicleSettings = this->findTable(CONST_COLUMNS::c_vehicleSettings);
+    std::string v2rLinkFile = toml::find<std::string>(vehicleSettings, CONST_COLUMNS::c_v2rLinkFile);
+    auto linkReader = LinkReader(v2rLinkFile);
+    auto linkMap = linkReader.getLinks();
+
+    NS_LOG_INFO("Setup Tx applications");
+    Ipv4StaticRoutingHelper ipv4RoutingHelper;
+    Ptr<UniformRandomVariable> startTimeSeconds = CreateObject<UniformRandomVariable>();
+    startTimeSeconds->SetStream(1);
+    startTimeSeconds->SetAttribute("Min", DoubleValue(0));
+    startTimeSeconds->SetAttribute("Max", DoubleValue(0.05));
+    std::string dataRateStr = toml::find<std::string>(networkSettings, netParameters::n_dataRate);
+    int64_t packetSize = toml::find<int64_t>(networkSettings, netParameters::n_packetSize);
+
+    ApplicationContainer vehicleApps;
+
+    UeToUePktTxRxOutputStats pktStats;
+    pktStats.SetDb(&db, "pktTxRx");
+
+    for (uint32_t i = 0; i < this->m_vehicleDevices.GetN(); i++){
+        Ptr<NetDevice> vehDevice = this->m_vehicleDevices.Get(i);
+        Ptr<Node> vehNode = vehDevice->GetNode();
+        Ptr<Ipv4> vehIpv4 = vehNode->GetObject<Ipv4>();
+        Ipv4Address vehAddr = vehIpv4->GetAddress(1, 0).GetLocal();
+        tft = Create<LteSlTft>(LteSlTft::Direction::TRANSMIT,
+                               LteSlTft::CommType::UniCast,
+                               vehAddr,
+                               dstL2Id);
+        slHelper->ActivateNrSlBearerForDevice(Time::From(0), vehDevice, tft);
+
+        NS_LOG_DEBUG("Vehicle ID: " << vehNode->GetId() << " Vehicle Addr: " << vehAddr);
+
+        Time lastStopTime = this->m_vehicleActivationTimes[vehNode->GetId()].second;
+        ApplicationContainer vehApps;
+        Ptr<Ipv4StaticRouting> vehicleRouting = ipv4RoutingHelper.GetStaticRouting(vehNode->GetObject<Ipv4>());
+
+        auto link = linkMap.find(vehNode->GetId());
+        if (link != linkMap.end())
+        {
+            for (uint32_t ii = 0; ii < link->second.size(); ++ii)
+            {
+                auto linkData = link->second[ii];
+                Time startTime = linkData.first;
+                Time stopTime = ii == link->second.size() - 1 ? lastStopTime : link->second[ii + 1].first;
+
+                uint32_t rsuId = this->m_rsuIdMap[linkData.second];
+                rsuId = rsuId - this->m_numVehicles;
+                Ptr<NetDevice> rsuDevice = this->m_rsuDevices.Get(rsuId);
+                Ptr<Node> rsuNode = rsuDevice->GetNode();
+                Ptr<Ipv4> rsuIpv4 = rsuNode->GetObject<Ipv4>();
+                Ipv4Address rsuAddr = rsuIpv4->GetAddress(1, 0).GetLocal();
+                NS_LOG_DEBUG("RSU ID: " << rsuId << " RSU Addr: " << rsuAddr);
+
+                // Create application
+                Address rsuSocketAddress = InetSocketAddress(rsuAddr, 8000);
+                OnOffHelper sidelinkClient("ns3::UdpSocketFactory", rsuSocketAddress);
+                sidelinkClient.SetAttribute("EnableSeqTsSizeHeader", BooleanValue(true));
+                sidelinkClient.SetConstantRate(DataRate(dataRateStr), packetSize);
+                vehApps.Add(sidelinkClient.Install(vehNode));
+
+                // Set start and stop time
+                double randomStart = startTimeSeconds->GetValue();
+                vehApps.Get(ii)->SetStartTime(startTime + Seconds(randomStart));
+                vehApps.Get(ii)->SetStopTime(stopTime);
+                NS_LOG_DEBUG("Start time: " << startTime.GetMilliSeconds() << " Stop time: " << stopTime.GetMilliSeconds());
+
+                vehicleRouting->AddHostRouteTo(rsuAddr, 1);
+            }
+        }
+        vehApps.Get(i)->TraceConnect("TxWithSeqTsSize",
+                                      "tx",
+                                      MakeBoundCallback(&Outputter::UePacketTraceDb, &pktStats, vehNode, vehAddr));
+        vehicleApps.Add(vehApps);
+    }
+
+    NS_LOG_INFO("Setup Rx applications");
+    ApplicationContainer rsuApps;
+    for (uint32_t i = 0; i < this->m_rsuDevices.GetN(); i++)
+    {
+        Ptr<NetDevice> rsuDevice = this->m_rsuDevices.Get(i);
+        Ptr<Node> rsuNode = rsuDevice->GetNode();
+        Ptr<Ipv4> rsuIpv4 = rsuNode->GetObject<Ipv4>();
+        Ipv4Address rsuAddr = rsuIpv4->GetAddress(1, 0).GetLocal();
+
+        tft = Create<LteSlTft>(LteSlTft::Direction::BIDIRECTIONAL,
+                               LteSlTft::CommType::UniCast,
+                               rsuAddr,
+                               dstL2Id);
+        slHelper->ActivateNrSlBearerForDevice(Time::From(0.01), rsuDevice, tft);
+
+        InetSocketAddress remoteAddr = InetSocketAddress(Ipv4Address::GetAny(), 8000);
+        PacketSinkHelper sidelinkSink("ns3::UdpSocketFactory", remoteAddr);
+        sidelinkSink.SetAttribute("EnableSeqTsSizeHeader", BooleanValue(true));
+
+        rsuApps.Add(sidelinkSink.Install(rsuNode));
+        rsuApps.Get(i)->SetStartTime(Seconds(0.01));
+        rsuApps.Get(i)->TraceConnect("RxWithSeqTsSize",
+                                      "rx",
+                                      MakeBoundCallback(&Outputter::UePacketTraceDb,
+                                                        &pktStats,
+                                                        rsuNode,
+                                                        rsuAddr));
+    }
+
+    NS_LOG_DEBUG("All nodes size: " << this->m_allNodes.GetN());
 
     NS_LOG_DEBUG("Outputter: Connecting to SlPscchScheduling trace source");
     UeMacPscchTxOutputStats pscchStats;
