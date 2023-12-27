@@ -361,38 +361,6 @@ Core::run()
                                   "ComponentCarrierMapUe/*/NrUeMac/RxRlcPduWithTxRnti",
                                   MakeBoundCallback(&Outputter::NotifySlRlcPduRx, &ueRlcRxStats));
 
-    UeToUePktTxRxOutputStats pktStats;
-    pktStats.SetDb(&db, "pktTxRx");
-
-    for (uint32_t ac = 0; ac < vehicleApps.GetN(); ac++)
-    {
-        Ipv4Address localAddrs = vehicleApps.Get(ac)
-                                     ->GetNode()
-                                     ->GetObject<Ipv4L3Protocol>()
-                                     ->GetAddress(1, 0)
-                                     .GetLocal();
-        vehicleApps.Get(ac)->TraceConnect("TxWithSeqTsSize",
-                                          "tx",
-                                          MakeBoundCallback(&Outputter::UePacketTraceDb,
-                                                            &pktStats,
-                                                            vehicleApps.Get(ac)->GetNode(),
-                                                            localAddrs));
-    }
-
-    // Set Rx traces
-    for (uint32_t ac = 0; ac < rsuApps.GetN(); ac++)
-    {
-        Ipv4Address localAddrs =
-            rsuApps.Get(ac)->GetNode()->GetObject<Ipv4L3Protocol>()->GetAddress(1, 0).GetLocal();
-        NS_LOG_DEBUG("Connecting to trace for node: " << rsuApps.Get(ac)->GetNode()->GetId());
-        rsuApps.Get(ac)->TraceConnect("RxWithSeqTsSize",
-                                      "rx",
-                                      MakeBoundCallback(&Outputter::UePacketTraceDb,
-                                                        &pktStats,
-                                                        rsuApps.Get(ac)->GetNode(),
-                                                        localAddrs));
-    }
-
     NS_LOG_DEBUG("Outputter: Connecting to V2xKpi trace source");
     V2xKpi v2xKpi;
     std::string v2xKpiPath = outputPath + outputName;
