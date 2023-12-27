@@ -51,8 +51,12 @@ void
 Core::createVehicleNodes()
 {
     toml_value vehicleSettings = this->findTable(CONST_COLUMNS::c_vehicleSettings);
+    std::string activationFile = toml::find<std::string>(vehicleSettings, CONST_COLUMNS::c_activationFile);
 
-    this->m_vehicleActivationTimes = getActivationData(vehicleSettings);
+    NS_LOG_DEBUG("Reading Activation file: " << activationFile);
+    ActivationReader activationReader(activationFile);
+    this->m_vehicleActivationTimes = activationReader.getActivationTimes();
+
     this->m_numVehicles = this->m_vehicleActivationTimes.size();
     NS_LOG_DEBUG("Vehicle size: " << this->m_numVehicles);
 
@@ -98,8 +102,13 @@ void
 Core::createRsuNodes()
 {
     toml_value rsuSettings = this->findTable(CONST_COLUMNS::c_rsuSettings);
+    std::string activationFile = toml::find<std::string>(rsuSettings, CONST_COLUMNS::c_activationFile);
 
-    this->m_rsuActivationTimes = getActivationData(rsuSettings);
+    NS_LOG_DEBUG("Reading Activation file: " << activationFile);
+    ActivationReader activationReader(activationFile);
+    this->m_rsuActivationTimes = activationReader.getActivationTimes();
+    this->m_rsuIdMap = activationReader.getNodeIdMap();
+
     this->m_numRSUs = this->m_rsuActivationTimes.size();
     NS_LOG_DEBUG("RSU size: " << this->m_numRSUs);
 
@@ -197,16 +206,13 @@ Core::run()
     this->createVehicleNodes();
     NS_LOG_INFO("Create RSU nodes");
     this->createRsuNodes();
-    NS_LOG_INFO("Create Controller nodes");
-    this->createControllerNodes();
     NS_LOG_INFO("Setting up NR module for all Nodes.");
     toml_value networkSettings = this->findTable(CONST_COLUMNS::c_netSettings);
 
     Ptr<NrPointToPointEpcHelper> epcHelper = CreateObject<NrPointToPointEpcHelper>();
-    // Beam forming can be enabled later
-    // Ptr<IdealBeamformingHelper> beamHelper = CreateObject<IdealBeamformingHelper>();
+    Ptr<IdealBeamformingHelper> beamHelper = CreateObject<IdealBeamformingHelper>();
     Ptr<NrHelper> nrHelper = CreateObject<NrHelper>();
-    // nrHelper->SetBeamformingHelper(beamHelper);
+    nrHelper->SetBeamformingHelper(beamHelper);
     NS_LOG_INFO("Setting up EPC...");
     nrHelper->SetEpcHelper(epcHelper);
 
