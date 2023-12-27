@@ -215,6 +215,7 @@ EpcUeNas::Send (Ptr<Packet> packet, uint16_t protocolNumber)
 {
   NS_LOG_FUNCTION (this << packet << protocolNumber);
 
+  NS_LOG_DEBUG("EpcUeNas::Send: " << packet << " protocolNumber: " << protocolNumber << " state: " << m_state);
   switch (m_state)
     {
     case ACTIVE:
@@ -230,6 +231,7 @@ EpcUeNas::Send (Ptr<Packet> packet, uint16_t protocolNumber)
                  it != m_slBearersActivatedList.end ();
                  it++)
               {
+                NS_LOG_FUNCTION(this << "Checking if " << ipv4Header.GetDestination() << " matches " << ipv4Header.GetDestination());
                 if ((*it)->Matches (ipv4Header.GetDestination ()))
                   {
                     //Found sidelink
@@ -300,6 +302,7 @@ EpcUeNas::Send (Ptr<Packet> packet, uint16_t protocolNumber)
           {
             Ipv4Header ipv4Header;
             pCopy->RemoveHeader (ipv4Header);
+            NS_LOG_DEBUG("EpcUeNas::Send: " << ipv4Header.GetDestination() << " m_slBearersActivatedList.size(): " << m_slBearersActivatedList.size());
             for (std::list<Ptr<LteSlTft> >::iterator it = m_slBearersActivatedList.begin ();
                  it != m_slBearersActivatedList.end ();
                  it++)
@@ -307,6 +310,7 @@ EpcUeNas::Send (Ptr<Packet> packet, uint16_t protocolNumber)
                 if ((*it)->Matches (ipv4Header.GetDestination ()))
                   {
                     //Found sidelink
+                    NS_LOG_DEBUG("Sending to SL IP " << ipv4Header.GetDestination());
                     m_asSapProvider->SendSidelinkData (packet, (*it)->GetDstL2Id ());
                     return true;
                   }
