@@ -429,13 +429,6 @@ Core::segregateNetDevices()
     for (auto it = this->m_allDevices.Begin(); it != this->m_allDevices.End(); ++it)
     {
         Ptr<NetDevice> device = *it;
-        // Last node is the controller node
-        if (device->GetNode()->GetId() == this->m_allNodes.GetN() - 1)
-        {
-            m_controllerDevices.Add(device);
-            continue;
-        }
-
         // If not vehicle node, then it is an RSU node
         if (device->GetNode()->GetId() < this->m_numVehicles)
         {
@@ -448,5 +441,4 @@ Core::segregateNetDevices()
     }
     NS_LOG_DEBUG("Vehicle devices size: " << m_vehicleDevices.GetN());
     NS_LOG_DEBUG("RSU devices size: " << m_rsuDevices.GetN());
-    NS_LOG_DEBUG("Controller devices size: " << m_controllerDevices.GetN());
 }
