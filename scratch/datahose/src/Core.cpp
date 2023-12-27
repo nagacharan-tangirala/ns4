@@ -1,7 +1,5 @@
 #include "Core.h"
 
-#include <utility>
-
 using namespace ns3;
 
 NS_LOG_COMPONENT_DEFINE("Core");
@@ -9,7 +7,6 @@ NS_LOG_COMPONENT_DEFINE("Core");
 Core::Core(std::string configFile)
 {
     this->m_configFile = std::move(configFile);
-    this->m_groupCastAddr = Ipv4Address("225.0.0.0");
 }
 
 void

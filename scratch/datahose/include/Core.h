@@ -17,6 +17,7 @@
 #include "TraceMobility.h"
 
 #include "ns3/applications-module.h"
+#include "ns3/nix-vector-routing-module.h"
 #include "ns3/constant-position-mobility-model.h"
 #include "ns3/core-module.h"
 #include "ns3/isotropic-antenna-model.h"
@@ -31,6 +32,7 @@
 #include "ns3/on-off-helper.h"
 
 #include <toml.hpp>
+#include <utility>
 
 using namespace ns3;
 
