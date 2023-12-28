@@ -359,11 +359,11 @@ Core::run()
                 NS_LOG_DEBUG("Start time: " << startTime.GetMilliSeconds() << " Stop time: " << stopTime.GetMilliSeconds());
 
                 vehicleRouting->AddHostRouteTo(rsuAddr, 1);
+                vehApps.Get(ii)->TraceConnect("TxWithSeqTsSize",
+                                             "tx",
+                                             MakeBoundCallback(&Outputter::UePacketTraceDb, &pktStats, vehNode, vehAddr));
             }
         }
-        vehApps.Get(i)->TraceConnect("TxWithSeqTsSize",
-                                      "tx",
-                                      MakeBoundCallback(&Outputter::UePacketTraceDb, &pktStats, vehNode, vehAddr));
         vehicleApps.Add(vehApps);
     }
 
