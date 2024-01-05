@@ -374,6 +374,7 @@ Core::run()
         Ptr<NetDevice> rsuDevice = this->m_rsuDevices.Get(i);
         Ptr<Node> rsuNode = rsuDevice->GetNode();
         Ptr<Ipv4> rsuIpv4 = rsuNode->GetObject<Ipv4>();
+        rsuIpv4->SetForwarding(1, false);
         Ipv4Address rsuAddr = rsuIpv4->GetAddress(1, 0).GetLocal();
 
         tft = Create<LteSlTft>(LteSlTft::Direction::BIDIRECTIONAL,
