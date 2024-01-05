@@ -64,6 +64,8 @@ public:
    * - "srcPort TEXT NOT NULL,"
    * - "dstIp TEXT NOT NULL,"
    * - "dstPort TEXT NOT NULL,"
+   * - "seq INTEGER NOT NULL,"
+   * - "pktUid TEXT NOT NULL,"
    * - "SEED INTEGER NOT NULL,"
    * - "RUN INTEGER NOT NULL"
    *
@@ -89,7 +91,7 @@ public:
    * \param dstAddrs The destination address from the trace
    * \param seq The packet sequence number
    */
-  void Save (const std::string txRx, const Address &localAddrs, uint32_t nodeId, uint64_t imsi, uint32_t pktSize, const Address &srcAddrs, const Address &dstAddrs, uint32_t seq);
+  void Save (const std::string txRx, const Address &localAddrs, uint32_t nodeId, uint64_t imsi, uint32_t pktSize, const Address &srcAddrs, const Address &dstAddrs, uint32_t seq, std::string pktUid);
 
   /**
    * \brief Force the cache write to disk, emptying the cache itself.
@@ -115,13 +117,15 @@ private:
      * \param srcAddrs The source address from the trace
      * \param dstAddrs The destination address from the trace
      * \param seq The sequence number of the packet
+     * \param pktUid The packet UID
      */
     UePacketResultCache (double timeSec, std::string txRx, Address localAddrs,
                          uint32_t nodeId, uint64_t imsi, uint32_t pktSize,
-                         Address srcAddrs, Address dstAddrs, uint32_t seq)
+                         Address srcAddrs, Address dstAddrs, uint32_t seq, std::string pktUid)
       : timeSec (timeSec), txRx (txRx), localAddrs (localAddrs),
       nodeId (nodeId), imsi (imsi), pktSize (pktSize), srcAddrs (srcAddrs),
       dstAddrs (dstAddrs),
+      pktUid (pktUid),
       seq (seq)
     {
     }
@@ -134,6 +138,7 @@ private:
     uint32_t pktSize; //!< The packet size
     Address srcAddrs; //!< The source address from the trace
     Address dstAddrs; //!< The destination address from the trace
+    std::string pktUid; //!< The packet UID
     uint32_t seq {std::numeric_limits <uint32_t>::max ()}; //!< The sequence number of the packet
   };
   /**

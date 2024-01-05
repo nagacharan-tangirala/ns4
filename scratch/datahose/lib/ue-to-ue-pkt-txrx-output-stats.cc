@@ -38,20 +38,21 @@ UeToUePktTxRxOutputStats::SetDb (SQLiteOutput *db, const std::string &tableName)
 
   bool ret;
 
-  ret = db->SpinExec ("CREATE TABLE IF NOT EXISTS " + tableName + " ("
-                      "timeSec DOUBLE NOT NULL, "
-                      "txRx TEXT NOT NULL,"
-                      "nodeId INTEGER NOT NULL,"
-                      "imsi INTEGER NOT NULL,"
-                      "pktSizeBytes INTEGER NOT NULL,"
-                      "srcIp TEXT NOT NULL,"
-                      "srcPort INTEGER NOT NULL,"
-                      "dstIp TEXT NOT NULL,"
-                      "dstPort INTEGER NOT NULL,"
-                      "pktSeqNum INTEGER NOT NULL,"
-                      "SEED INTEGER NOT NULL,"
-                      "RUN INTEGER NOT NULL"
-                      ");");
+    ret = db->SpinExec ("CREATE TABLE IF NOT EXISTS " + tableName + " ("
+                                                                    "timeSec DOUBLE NOT NULL, "
+                                                                    "txRx TEXT NOT NULL,"
+                                                                    "nodeId INTEGER NOT NULL,"
+                                                                    "imsi INTEGER NOT NULL,"
+                                                                    "pktSizeBytes INTEGER NOT NULL,"
+                                                                    "srcIp TEXT NOT NULL,"
+                                                                    "srcPort INTEGER NOT NULL,"
+                                                                    "dstIp TEXT NOT NULL,"
+                                                                    "dstPort INTEGER NOT NULL,"
+                                                                    "pktSeqNum INTEGER NOT NULL,"
+                                                                    "pktUuid INTEGER NOT NULL,"
+                                                                    "SEED INTEGER NOT NULL,"
+                                                                    "RUN INTEGER NOT NULL"
+                                                                    ");");
 
   NS_ABORT_UNLESS (ret);
 
