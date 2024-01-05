@@ -382,8 +382,8 @@ Core::run()
                                dstL2Id);
         slHelper->ActivateNrSlBearerForDevice(Time::From(0.01), rsuDevice, tft);
 
-        InetSocketAddress remoteAddr = InetSocketAddress(Ipv4Address::GetAny(), 8000);
-        PacketSinkHelper sidelinkSink("ns3::UdpSocketFactory", remoteAddr);
+        InetSocketAddress remoteAddr = InetSocketAddress(rsuAddr, 8000);
+        PacketSinkHelper sidelinkSink = PacketSinkHelper("ns3::UdpSocketFactory", remoteAddr);
         sidelinkSink.SetAttribute("EnableSeqTsSizeHeader", BooleanValue(true));
 
         rsuApps.Add(sidelinkSink.Install(rsuNode));
