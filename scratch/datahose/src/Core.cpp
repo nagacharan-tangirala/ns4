@@ -360,9 +360,14 @@ Core::run()
 
                 // Set start and stop time
                 double randomStart = startTimeSeconds->GetValue();
-                vehApps.Get(ii)->SetStartTime(startTime + Seconds(randomStart));
+                startTime = startTime + Seconds(randomStart);
+
+                // Start one step before to warm up
+                startTime = std::max(Seconds(randomStart), startTime - this->m_stepSize);
+
+                vehApps.Get(ii)->SetStartTime(startTime);
                 vehApps.Get(ii)->SetStopTime(stopTime);
-                NS_LOG_DEBUG("Start time: " << startTime.GetMilliSeconds() << " Stop time: " << stopTime.GetMilliSeconds());
+                NS_LOG_DEBUG("Start time: " << startTime.GetMilliSeconds() << " Stop time: " << stopTime.GetMilliSeconds() << " Random start: " << randomStart);
 
                 vehicleRouting->AddHostRouteTo(rsuAddr, 1);
                 vehApps.Get(ii)->TraceConnect("TxWithSeqTsSize",
