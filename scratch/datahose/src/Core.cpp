@@ -339,6 +339,10 @@ Core::run()
                 Time startTime = linkData.first;
                 Time stopTime = ii == link->second.size() - 1 ? lastStopTime : link->second[ii + 1].first;
 
+                if (startTime > this->m_stopTime) {
+                    continue;
+                }
+
                 uint32_t rsuId = linkData.second;
                 rsuId = rsuId - this->m_numVehicles;
                 Ptr<NetDevice> rsuDevice = this->m_rsuDevices.Get(rsuId);
