@@ -48,6 +48,7 @@ class Core
 
     Time m_stopTime;
     Time m_streamTime;
+    Time m_stepSize;
 
     uint32_t m_numVehicles;
     uint32_t m_numRSUs;

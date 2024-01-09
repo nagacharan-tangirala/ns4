@@ -43,8 +43,10 @@ Core::readSimulationSettings()
     this->m_stopTime = MilliSeconds(toml::find<uint64_t>(simSettings, CONST_COLUMNS::c_stopTime));
     this->m_streamTime =
         MilliSeconds(toml::find<uint64_t>(simSettings, CONST_COLUMNS::c_streamTime));
+    this->m_stepSize = MilliSeconds(toml::find<uint64_t>(simSettings, CONST_COLUMNS::c_stepSize));
     NS_LOG_DEBUG("Stop time: " << this->m_stopTime.GetMilliSeconds());
     NS_LOG_DEBUG("Stream time: " << this->m_streamTime.GetMilliSeconds());
+    NS_LOG_DEBUG("Step size: " << this->m_stepSize.GetMilliSeconds());
 }
 
 void

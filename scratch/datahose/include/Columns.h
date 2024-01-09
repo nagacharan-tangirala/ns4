@@ -41,6 +41,7 @@ const std::string c_targetId = "target_id";
 
 const std::string c_stopTime = "sim_duration";
 const std::string c_streamTime = "sim_streaming_step";
+const std::string c_stepSize = "sim_step_size";
 
 const std::string c_logComponents = "log_components";
 const std::string c_logLevel = "log_level";
