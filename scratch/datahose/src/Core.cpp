@@ -410,44 +410,44 @@ Core::run()
 
     NS_LOG_DEBUG("All nodes size: " << this->m_allNodes.GetN());
 
-    NS_LOG_DEBUG("Outputter: Connecting to SlPscchScheduling trace source");
-    UeMacPscchTxOutputStats pscchStats;
-    pscchStats.SetDb(&db, "pscchTxUeMac");
-    Config::ConnectWithoutContext(
-        "/NodeList/*/DeviceList/*/$ns3::NrUeNetDevice/"
-        "ComponentCarrierMapUe/*/NrUeMac/SlPscchScheduling",
-        MakeBoundCallback(&Outputter::NotifySlPscchScheduling, &pscchStats));
-
-    NS_LOG_DEBUG("Outputter: Connecting to SlPsschScheduling trace source");
-    UeMacPsschTxOutputStats psschStats;
-    psschStats.SetDb(&db, "psschTxUeMac");
-    Config::ConnectWithoutContext(
-        "/NodeList/*/DeviceList/*/$ns3::NrUeNetDevice/"
-        "ComponentCarrierMapUe/*/NrUeMac/SlPsschScheduling",
-        MakeBoundCallback(&Outputter::NotifySlPsschScheduling, &psschStats));
-
-    NS_LOG_DEBUG("Outputter: Connecting to RxPscchTraceUe trace source");
-    UePhyPscchRxOutputStats pscchPhyStats;
-    pscchPhyStats.SetDb(&db, "pscchRxUePhy");
-    Config::ConnectWithoutContext(
-        "/NodeList/*/DeviceList/*/$ns3::NrUeNetDevice/ComponentCarrierMapUe/*/NrUePhy/"
-        "NrSpectrumPhyList/*/RxPscchTraceUe",
-        MakeBoundCallback(&Outputter::NotifySlPscchRx, &pscchPhyStats));
-
-    NS_LOG_DEBUG("Outputter: Connecting to RxPsschTraceUe trace source");
-    UePhyPsschRxOutputStats psschPhyStats;
-    psschPhyStats.SetDb(&db, "psschRxUePhy");
-    Config::ConnectWithoutContext(
-        "/NodeList/*/DeviceList/*/$ns3::NrUeNetDevice/ComponentCarrierMapUe/*/NrUePhy/"
-        "NrSpectrumPhyList/*/RxPsschTraceUe",
-        MakeBoundCallback(&Outputter::NotifySlPsschRx, &psschPhyStats));
-
-    NS_LOG_DEBUG("Outputter: Connecting to RxRlcPduWithTxRnti trace source");
-    UeRlcRxOutputStats ueRlcRxStats;
-    ueRlcRxStats.SetDb(&db, "rlcRx");
-    Config::ConnectWithoutContext("/NodeList/*/DeviceList/*/$ns3::NrUeNetDevice/"
-                                  "ComponentCarrierMapUe/*/NrUeMac/RxRlcPduWithTxRnti",
-                                  MakeBoundCallback(&Outputter::NotifySlRlcPduRx, &ueRlcRxStats));
+//    NS_LOG_DEBUG("Outputter: Connecting to SlPscchScheduling trace source");
+//    UeMacPscchTxOutputStats pscchStats;
+//    pscchStats.SetDb(&db, "pscchTxUeMac");
+//    Config::ConnectWithoutContext(
+//        "/NodeList/*/DeviceList/*/$ns3::NrUeNetDevice/"
+//        "ComponentCarrierMapUe/*/NrUeMac/SlPscchScheduling",
+//        MakeBoundCallback(&Outputter::NotifySlPscchScheduling, &pscchStats));
+//
+//    NS_LOG_DEBUG("Outputter: Connecting to SlPsschScheduling trace source");
+//    UeMacPsschTxOutputStats psschStats;
+//    psschStats.SetDb(&db, "psschTxUeMac");
+//    Config::ConnectWithoutContext(
+//        "/NodeList/*/DeviceList/*/$ns3::NrUeNetDevice/"
+//        "ComponentCarrierMapUe/*/NrUeMac/SlPsschScheduling",
+//        MakeBoundCallback(&Outputter::NotifySlPsschScheduling, &psschStats));
+//
+//    NS_LOG_DEBUG("Outputter: Connecting to RxPscchTraceUe trace source");
+//    UePhyPscchRxOutputStats pscchPhyStats;
+//    pscchPhyStats.SetDb(&db, "pscchRxUePhy");
+//    Config::ConnectWithoutContext(
+//        "/NodeList/*/DeviceList/*/$ns3::NrUeNetDevice/ComponentCarrierMapUe/*/NrUePhy/"
+//        "NrSpectrumPhyList/*/RxPscchTraceUe",
+//        MakeBoundCallback(&Outputter::NotifySlPscchRx, &pscchPhyStats));
+//
+//    NS_LOG_DEBUG("Outputter: Connecting to RxPsschTraceUe trace source");
+//    UePhyPsschRxOutputStats psschPhyStats;
+//    psschPhyStats.SetDb(&db, "psschRxUePhy");
+//    Config::ConnectWithoutContext(
+//        "/NodeList/*/DeviceList/*/$ns3::NrUeNetDevice/ComponentCarrierMapUe/*/NrUePhy/"
+//        "NrSpectrumPhyList/*/RxPsschTraceUe",
+//        MakeBoundCallback(&Outputter::NotifySlPsschRx, &psschPhyStats));
+//
+//    NS_LOG_DEBUG("Outputter: Connecting to RxRlcPduWithTxRnti trace source");
+//    UeRlcRxOutputStats ueRlcRxStats;
+//    ueRlcRxStats.SetDb(&db, "rlcRx");
+//    Config::ConnectWithoutContext("/NodeList/*/DeviceList/*/$ns3::NrUeNetDevice/"
+//                                  "ComponentCarrierMapUe/*/NrUeMac/RxRlcPduWithTxRnti",
+//                                  MakeBoundCallback(&Outputter::NotifySlRlcPduRx, &ueRlcRxStats));
 
     NS_LOG_DEBUG("Outputter: Connecting to V2xKpi trace source");
     V2xKpi v2xKpi;
@@ -466,13 +466,13 @@ Core::run()
     Simulator::Stop(this->m_stopTime);
     Simulator::Run();
 
-    pscchStats.EmptyCache();
+//    pscchStats.EmptyCache();
     pktStats.EmptyCache();
-    psschStats.EmptyCache();
-    pscchPhyStats.EmptyCache();
-    psschPhyStats.EmptyCache();
-    ueRlcRxStats.EmptyCache();
-    v2xKpi.WriteKpis();
+//    psschStats.EmptyCache();
+//    pscchPhyStats.EmptyCache();
+//    psschPhyStats.EmptyCache();
+//    ueRlcRxStats.EmptyCache();
+    // v2xKpi.WriteKpis();
     Simulator::Destroy();
 }
 
