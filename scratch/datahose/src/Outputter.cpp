@@ -46,8 +46,9 @@ Outputter::UePacketTraceDb(UeToUePktTxRxOutputStats* stats,
     uint64_t imsi = node->GetDevice(0)->GetObject<NrUeNetDevice>()->GetImsi();
     uint32_t seq = seqTsSizeHeader.GetSeq();
     uint32_t pktSize = p->GetSize() + seqTsSizeHeader.GetSerializedSize();
+    std::string pktUid = std::to_string(p->GetUid());
 
-    stats->Save(txRx, localAddrs, nodeId, imsi, pktSize, srcAddrs, dstAddrs, seq);
+    stats->Save(txRx, localAddrs, nodeId, imsi, pktSize, srcAddrs, dstAddrs, seq, pktUid);
 }
 
 void

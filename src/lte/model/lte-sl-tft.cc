@@ -89,6 +89,7 @@ LteSlTft::Matches (Ipv4Address ra)
   bool ok = false;
   //check remote address
   ok = m_hasRemoteAddress ? m_remoteMask.IsMatch (ra, m_remoteAddress) : true;
+  NS_LOG_DEBUG("Matches: " << ok);
   return ok;
 }
 

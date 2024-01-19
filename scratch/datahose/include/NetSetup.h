@@ -62,17 +62,5 @@ class NetSetup
         std::set<uint8_t> bandwidth);
 
     LteRrcSap::SidelinkPreconfigNr configureSidelinkPreConfig();
-
-    ApplicationContainer setupTxApplications(NodeContainer nodes,
-                                             Ipv4Address groupCastAddr,
-                                             activation_map_t activationData);
-
-    ApplicationContainer setupTxUdpApplications(NodeContainer nodes,
-                                                Ipv4Address groupCastAddr,
-                                                activation_map_t activationData);
-
-    ApplicationContainer setupRxApplications(NodeContainer nodes);
-
-    ApplicationContainer setupRxUdpApplications(NodeContainer nodes);
 };
 #endif // NS3_NETSETUP_H

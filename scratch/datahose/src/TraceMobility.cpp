@@ -20,13 +20,17 @@ TraceMobility::addWaypointsBetween(const Time& startTime,
 {
     std::shared_ptr<arrow::Table> table =
         m_traceReader.streamDataBetween(startTime.GetMilliSeconds(), endTime.GetMilliSeconds());
-    NS_LOG_DEBUG("Received Mobility data with " << table->num_rows() << " rows");
-    if (table->num_rows() == 0)
+    if (table == nullptr )
     {
         NS_LOG_DEBUG("No more input data, no waypoints are added.");
         return;
     }
+    if (table->num_rows() == 0) {
+        NS_LOG_DEBUG("No more input data, no waypoints are added.");
+        return;
+    }
 
+    NS_LOG_DEBUG("Received Mobility data with " << table->num_rows() << " rows");
     auto xColumn = arrowUtils::getDoubleChunkedArray(table, CONST_COLUMNS::c_coordX);
     auto yColumn = arrowUtils::getDoubleChunkedArray(table, CONST_COLUMNS::c_coordY);
     auto timeColumn = arrowUtils::getInt64ChunkedArray(table, CONST_COLUMNS::c_timeStep);

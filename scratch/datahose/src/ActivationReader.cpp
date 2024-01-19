@@ -18,13 +18,22 @@ ActivationReader::getActivationTimes()
     auto onTimeCol = table->GetColumnByName(CONST_COLUMNS::c_onTimes);
     auto offTimeCol = table->GetColumnByName(CONST_COLUMNS::c_offTimes);
 
-    auto nodeIdColumn = table->GetColumnByName(CONST_COLUMNS::c_ns3Id);
+    auto ns3IdColumn = table->GetColumnByName(CONST_COLUMNS::c_ns3Id);
+    auto ns3IdData = ns3IdColumn->View(std::make_shared<arrow::Int64Type>()).ValueOrDie();
+
+    auto nodeIdColumn = table->GetColumnByName(CONST_COLUMNS::c_nodeId);
     auto nodeIdData = nodeIdColumn->View(std::make_shared<arrow::Int64Type>()).ValueOrDie();
 
-    for (int rowIdx = 0; rowIdx < nodeIdData->length(); rowIdx++)
+    for (int rowIdx = 0; rowIdx < ns3IdData->length(); rowIdx++)
     {
+        auto ns3IdVal = ns3IdData->GetScalar(rowIdx).ValueOrDie();
+        uint64_t ns3_node_id = std::static_pointer_cast<arrow::Int64Scalar>(ns3IdVal)->value;
+
         auto nodeIdVal = nodeIdData->GetScalar(rowIdx).ValueOrDie();
-        uint64_t nodeId = std::static_pointer_cast<arrow::Int64Scalar>(nodeIdVal)->value;
+        uint64_t node_id = std::static_pointer_cast<arrow::Int64Scalar>(nodeIdVal)->value;
+
+        NS_LOG_DEBUG("Node ID: " << node_id << " NS3 Node ID: " << ns3_node_id);
+        this->m_nodeIdMap.insert(std::make_pair(node_id, ns3_node_id));
 
         auto onTimeVal = onTimeCol->GetScalar(rowIdx).ValueOrDie();
         uint64_t onTime = std::static_pointer_cast<arrow::Int64Scalar>(onTimeVal)->value;
@@ -34,15 +43,15 @@ ActivationReader::getActivationTimes()
         uint64_t offTime = std::static_pointer_cast<arrow::Int64Scalar>(offTimeVal)->value;
         Time offTimeMs = Time(MilliSeconds(offTime));
 
-        NS_LOG_DEBUG("Node ID: " << nodeId << " On time: " << onTimeMs.GetMilliSeconds()
+        NS_LOG_DEBUG("Node ID: " << ns3_node_id << " On time: " << onTimeMs.GetMilliSeconds()
                                  << " Off time: " << offTimeMs.GetMilliSeconds());
 
-        if (activationTimes.find(nodeId) != activationTimes.end())
+        if (activationTimes.find(ns3_node_id) != activationTimes.end())
         {
-            NS_LOG_UNCOND("Overwriting activation times for node " << nodeId);
+            NS_LOG_UNCOND("Overwriting activation times for node " << ns3_node_id);
         }
         activationTimes.insert(
-            std::make_pair(nodeId, std::make_pair(onTime, offTime)));
+            std::make_pair(ns3_node_id, std::make_pair(onTimeMs, offTimeMs)));
     }
     return activationTimes;
 }

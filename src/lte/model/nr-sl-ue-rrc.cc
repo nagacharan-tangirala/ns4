@@ -314,6 +314,11 @@ NrSlUeRrc::GetSidelinkDataRadioBearer (uint32_t srcL2Id, uint32_t dstL2Id)
   NS_LOG_FUNCTION (this);
   Ptr<NrSlDataRadioBearerInfo> slrb = nullptr;
   NrSlDrbMapPerL2Id::iterator destIt = m_slDrbMap.find (dstL2Id);
+  NS_LOG_DEBUG("Searching SL DRB " << srcL2Id << " -> " << dstL2Id << " m_slDrbMap.size() = " << m_slDrbMap.size());
+  if (m_slDrbMap.size() == 1)
+    {
+        NS_LOG_DEBUG("m_slDrbMap.get() = " << m_slDrbMap.begin()->first);
+    }
   NS_ASSERT_MSG (destIt != m_slDrbMap.end (), "Unable to find DRB for destination L2 Id " << dstL2Id);
   NS_LOG_LOGIC ("Searching SL DRB " << srcL2Id << " -> " << dstL2Id);
   // Since we do not support multiple bearers for a single destination,
@@ -322,6 +327,7 @@ NrSlUeRrc::GetSidelinkDataRadioBearer (uint32_t srcL2Id, uint32_t dstL2Id)
   // In future, when we overcome this limitation this method would have an
   // extra parameter of LC id.
   NS_ASSERT_MSG (destIt->second.size () == 1, "There should be only one LC per destination");
+  NS_LOG_DEBUG("destIt->second.begin()->second = " << destIt->second.begin()->second);
   return destIt->second.begin ()->second;
 }
 

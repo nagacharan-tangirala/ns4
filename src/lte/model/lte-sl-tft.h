@@ -77,7 +77,7 @@ public:
   {
     Broadcast = 1,
     GroupCast = 2,
-    Uincast = 3,
+    UniCast = 3,
     INVALID = 4
   };
 

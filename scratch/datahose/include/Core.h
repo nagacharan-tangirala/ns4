@@ -12,10 +12,12 @@
 #include "Columns.h"
 #include "NetSetup.h"
 #include "Outputter.h"
+#include "LinkReader.h"
 #include "PositionReader.h"
 #include "TraceMobility.h"
 
 #include "ns3/applications-module.h"
+#include "ns3/nix-vector-routing-module.h"
 #include "ns3/constant-position-mobility-model.h"
 #include "ns3/core-module.h"
 #include "ns3/isotropic-antenna-model.h"
@@ -30,6 +32,7 @@
 #include "ns3/on-off-helper.h"
 
 #include <toml.hpp>
+#include <utility>
 
 using namespace ns3;
 
@@ -42,30 +45,26 @@ class Core
     toml_value m_config;
 
     std::unique_ptr<NetSetup> m_netSetup;
-    Ipv4Address m_groupCastAddr;
 
     Time m_stopTime;
     Time m_streamTime;
+    Time m_stepSize;
 
     uint32_t m_numVehicles;
     uint32_t m_numRSUs;
-    uint32_t m_numControllers;
 
     NodeContainer m_vehicleNodes;
     NodeContainer m_rsuNodes;
-    NodeContainer m_controllerNodes;
-
     NodeContainer m_allNodes;
-
-    activation_map_t m_vehicleActivationTimes;
-    activation_map_t m_rsuActivationTimes;
-    activation_map_t m_controllerActivationTimes;
 
     NetDeviceContainer m_vehicleDevices;
     NetDeviceContainer m_rsuDevices;
-    NetDeviceContainer m_controllerDevices;
-
     NetDeviceContainer m_allDevices;
+
+    node_id_map_t m_rsuIdMap;
+
+    activation_map_t m_rsuActivationTimes;
+    activation_map_t m_vehicleActivationTimes;
 
     std::unique_ptr<TraceMobility> m_vehicleMobility;
 
@@ -77,11 +76,7 @@ class Core
 
     void createRsuNodes();
 
-    void createControllerNodes();
-
     void setupRSUPositions(toml_value rsuSettings);
-
-    void setupControllerPositions(toml_value controllerSettings);
 
     static LogLevel getLogLevel(std::string logLevel);
 
@@ -92,8 +87,6 @@ class Core
     void setupLogging() const;
 
     void setupVehicleMobility(toml_value vehicleSettings);
-
-    static activation_map_t getActivationData(const toml_value& nodeSettings);
 
     void run();
 
