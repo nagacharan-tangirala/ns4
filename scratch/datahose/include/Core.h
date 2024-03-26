@@ -1,7 +1,7 @@
 /*
  * Core.h
  *
- * Created on: 2023-11-21
+ * Created on: 2024-01-19
  * Author: charan
  */
 
@@ -10,27 +10,21 @@
 
 #include "ActivationReader.h"
 #include "Columns.h"
-#include "NetSetup.h"
 #include "Outputter.h"
 #include "LinkReader.h"
 #include "PositionReader.h"
 #include "TraceMobility.h"
 
-#include "ns3/applications-module.h"
-#include "ns3/nix-vector-routing-module.h"
 #include "ns3/constant-position-mobility-model.h"
-#include "ns3/core-module.h"
-#include "ns3/isotropic-antenna-model.h"
-#include "ns3/lte-sl-tft.h"
-#include "ns3/network-module.h"
-#include "ns3/node-container.h"
-#include "ns3/nr-helper.h"
-#include "ns3/nr-module.h"
-#include "ns3/nr-point-to-point-epc-helper.h"
-#include "ns3/nr-sl-helper.h"
-#include "ns3/nr-ue-net-device.h"
+#include "ns3/csma-helper.h"
+#include "ns3/internet-stack-helper.h"
+#include "ns3/ipv4-address-helper.h"
+#include "ns3/ipv4-interface-container.h"
+#include "ns3/ipv4-static-routing-helper.h"
+#include "ns3/packet-sink-helper.h"
+#include "ns3/string.h"
+#include "ns3/udp-echo-helper.h"
 #include "ns3/on-off-helper.h"
-
 #include <toml.hpp>
 #include <utility>
 
@@ -43,8 +37,6 @@ class Core
   private:
     std::string m_configFile;
     toml_value m_config;
-
-    std::unique_ptr<NetSetup> m_netSetup;
 
     Time m_stopTime;
     Time m_streamTime;

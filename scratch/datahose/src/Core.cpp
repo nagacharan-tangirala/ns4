@@ -14,7 +14,6 @@ Core::runSimulation()
 {
     NS_LOG_INFO("Reading config file: " << this->m_configFile);
     this->readConfigFile();
-    this->m_netSetup = std::make_unique<NetSetup>(this->m_config);
     NS_LOG_INFO("Setup logging");
     this->setupLogging();
     NS_LOG_INFO("Reading Simulation settings");
@@ -208,74 +207,24 @@ Core::run()
     this->createVehicleNodes();
     NS_LOG_INFO("Create RSU nodes");
     this->createRsuNodes();
-    NS_LOG_INFO("Setting up NR module for all Nodes.");
+
     toml_value networkSettings = this->findTable(CONST_COLUMNS::c_netSettings);
 
-    Ptr<NrPointToPointEpcHelper> epcHelper = CreateObject<NrPointToPointEpcHelper>();
-    Ptr<IdealBeamformingHelper> beamHelper = CreateObject<IdealBeamformingHelper>();
-    Ptr<NrHelper> nrHelper = CreateObject<NrHelper>();
-    nrHelper->SetBeamformingHelper(beamHelper);
-    NS_LOG_INFO("Setting up EPC...");
-    nrHelper->SetEpcHelper(epcHelper);
-
-    NS_LOG_DEBUG("Configuring operation band...");
-    OperationBandInfo operationBandInfo =
-        this->m_netSetup->updateNRHelperAndBuildOpBandInfo(networkSettings, nrHelper);
-    BandwidthPartInfoPtrVector bwpInfoVector = CcBwpCreator::GetAllBwps({operationBandInfo});
-
-    NS_LOG_INFO("Configuring Antenna...");
-    nrHelper = this->m_netSetup->configureAntenna(nrHelper);
-
-    NS_LOG_INFO("Configuring MAC and PHY...");
-    nrHelper = this->m_netSetup->configureMacAndPhy(nrHelper);
-
-    uint8_t bwpIdForGbrMcptt = 0;
-    nrHelper->SetBwpManagerTypeId(TypeId::LookupByName("ns3::NrSlBwpManagerUe"));
-    nrHelper->SetUeBwpManagerAlgorithmAttribute("GBR_MC_PUSH_TO_TALK",
-                                                UintegerValue(bwpIdForGbrMcptt));
-    std::set<uint8_t> bwpIds;
-    bwpIds.insert(bwpIdForGbrMcptt);
-
-    this->m_allDevices = nrHelper->InstallUeDevice(this->m_allNodes, bwpInfoVector);
-
-    for (auto it = this->m_allDevices.Begin(); it != this->m_allDevices.End(); ++it)
-    {
-        DynamicCast<NrUeNetDevice>(*it)->UpdateConfig(); // required as per docs
-    }
-
-    NS_LOG_INFO("Configuring sidelink...");
-    Ptr<NrSlHelper> slHelper = this->m_netSetup->configureSideLink();
-    slHelper->SetEpcHelper(epcHelper);
-    slHelper->PrepareUeForSidelink(this->m_allDevices, bwpIds);
-
-    NS_LOG_INFO("Configuring sidelink resource pool...");
-    LteRrcSap::SlBwpPoolConfigCommonNr slResourcePool = this->m_netSetup->configureResourcePool();
-
-    NS_LOG_INFO("Configure sidelink bandwidth part...");
-    LteRrcSap::SlFreqConfigCommonNr freqConfig =
-        this->m_netSetup->configureBandwidth(slResourcePool, bwpIds);
-
-    NS_LOG_INFO("Configure other sidelink settings...");
-    LteRrcSap::SidelinkPreconfigNr sideLinkPreconfigNr =
-        this->m_netSetup->configureSidelinkPreConfig();
-    sideLinkPreconfigNr.slPreconfigFreqInfoList[0] = freqConfig;
-
-    slHelper->InstallNrSlPreConfiguration(this->m_allDevices, sideLinkPreconfigNr);
-
-    int64_t stream = 1;
-    stream += nrHelper->AssignStreams(this->m_allDevices, stream);
-    stream += slHelper->AssignStreams(this->m_allDevices, stream);
-
-    NS_LOG_INFO("Configure Internet Stack...");
-
-    InternetStackHelper internet;
-    internet.Install(this->m_allNodes);
+    std::string dataRateStr = toml::find<std::string>(networkSettings, CONST_COLUMNS::n_dataRate);
+    int64_t packetSize = toml::find<int64_t>(networkSettings, CONST_COLUMNS::n_packetSize);
+    uint64_t packetInterval = toml::find<uint64_t>(networkSettings, CONST_COLUMNS::n_packetInterval);
+    Time packetIntervalTime = MilliSeconds(packetInterval);
+    CsmaHelper csma;
+    csma.SetChannelAttribute("DataRate", StringValue("100Mbps"));
+    csma.SetChannelAttribute("Delay", StringValue("2ms"));
+    this->m_allDevices = csma.Install(this->m_allNodes);
 
     NS_LOG_INFO("Separating devices into vehicle and RSU devices...");
     this->segregateNetDevices();
 
-    uint32_t dstL2Id = 225;
-    Ipv4InterfaceContainer ueIpIface;
+    NS_LOG_INFO("Configure Internet Stack...");
+    InternetStackHelper internet;
+    internet.Install(this->m_allNodes);
 
     Ipv4AddressHelper ipv4;
     ipv4.SetBase ("10.1.0.0", "255.255.0.0");
@@ -283,8 +232,6 @@ Core::run()
     Ipv4InterfaceContainer vehContainer = ipv4.Assign (this->m_vehicleDevices);
     ipv4.SetBase ("10.2.0.0", "255.255.0.0");
     Ipv4InterfaceContainer rsuContainer = ipv4.Assign (this->m_rsuDevices);
-
-    Ptr<LteSlTft> tft;
 
     NS_LOG_INFO("Reading output settings");
     toml_value outputSettings = this->findTable(CONST_COLUMNS::c_outputSettings);
@@ -305,8 +252,6 @@ Core::run()
     startTimeSeconds->SetStream(1);
     startTimeSeconds->SetAttribute("Min", DoubleValue(0));
     startTimeSeconds->SetAttribute("Max", DoubleValue(0.05));
-    std::string dataRateStr = toml::find<std::string>(networkSettings, netParameters::n_dataRate);
-    int64_t packetSize = toml::find<int64_t>(networkSettings, netParameters::n_packetSize);
 
     ApplicationContainer vehicleApps;
 
@@ -318,11 +263,6 @@ Core::run()
         Ptr<Node> vehNode = vehDevice->GetNode();
         Ptr<Ipv4> vehIpv4 = vehNode->GetObject<Ipv4>();
         Ipv4Address vehAddr = vehIpv4->GetAddress(1, 0).GetLocal();
-        tft = Create<LteSlTft>(LteSlTft::Direction::TRANSMIT,
-                               LteSlTft::CommType::UniCast,
-                               vehAddr,
-                               dstL2Id);
-        slHelper->ActivateNrSlBearerForDevice(Time::From(0), vehDevice, tft);
 
         NS_LOG_DEBUG("Vehicle ID: " << vehNode->GetId() << " Vehicle Addr: " << vehAddr);
 
@@ -371,8 +311,8 @@ Core::run()
 
                 vehicleRouting->AddHostRouteTo(rsuAddr, 1);
                 vehApps.Get(ii)->TraceConnect("TxWithSeqTsSize",
-                                             "tx",
-                                             MakeBoundCallback(&Outputter::UePacketTraceDb, &pktStats, vehNode, vehAddr));
+                                              "tx",
+                                              MakeBoundCallback(&Outputter::UePacketTraceDb, &pktStats, vehNode, vehAddr));
             }
         }
         vehicleApps.Add(vehApps);
@@ -380,6 +320,7 @@ Core::run()
 
     NS_LOG_INFO("Setup Rx applications");
     ApplicationContainer rsuApps;
+    UdpEchoServerHelper echoServerHelper(8000);
     for (uint32_t i = 0; i < this->m_rsuDevices.GetN(); i++)
     {
         Ptr<NetDevice> rsuDevice = this->m_rsuDevices.Get(i);
@@ -388,12 +329,6 @@ Core::run()
         rsuIpv4->SetForwarding(1, false);
         Ipv4Address rsuAddr = rsuIpv4->GetAddress(1, 0).GetLocal();
 
-        tft = Create<LteSlTft>(LteSlTft::Direction::BIDIRECTIONAL,
-                               LteSlTft::CommType::UniCast,
-                               rsuAddr,
-                               dstL2Id);
-        slHelper->ActivateNrSlBearerForDevice(Time::From(0.01), rsuDevice, tft);
-
         InetSocketAddress remoteAddr = InetSocketAddress(rsuAddr, 8000);
         PacketSinkHelper sidelinkSink = PacketSinkHelper("ns3::UdpSocketFactory", remoteAddr);
         sidelinkSink.SetAttribute("EnableSeqTsSizeHeader", BooleanValue(true));
@@ -401,61 +336,14 @@ Core::run()
         rsuApps.Add(sidelinkSink.Install(rsuNode));
         rsuApps.Get(i)->SetStartTime(Seconds(0.01));
         rsuApps.Get(i)->TraceConnect("RxWithSeqTsSize",
-                                      "rx",
-                                      MakeBoundCallback(&Outputter::UePacketTraceDb,
-                                                        &pktStats,
-                                                        rsuNode,
-                                                        rsuAddr));
+                                     "rx",
+                                     MakeBoundCallback(&Outputter::UePacketTraceDb,
+                                                       &pktStats,
+                                                       rsuNode,
+                                                       rsuAddr));
     }
 
     NS_LOG_DEBUG("All nodes size: " << this->m_allNodes.GetN());
-
-//    NS_LOG_DEBUG("Outputter: Connecting to SlPscchScheduling trace source");
-//    UeMacPscchTxOutputStats pscchStats;
-//    pscchStats.SetDb(&db, "pscchTxUeMac");
-//    Config::ConnectWithoutContext(
-//        "/NodeList/*/DeviceList/*/$ns3::NrUeNetDevice/"
-//        "ComponentCarrierMapUe/*/NrUeMac/SlPscchScheduling",
-//        MakeBoundCallback(&Outputter::NotifySlPscchScheduling, &pscchStats));
-//
-//    NS_LOG_DEBUG("Outputter: Connecting to SlPsschScheduling trace source");
-//    UeMacPsschTxOutputStats psschStats;
-//    psschStats.SetDb(&db, "psschTxUeMac");
-//    Config::ConnectWithoutContext(
-//        "/NodeList/*/DeviceList/*/$ns3::NrUeNetDevice/"
-//        "ComponentCarrierMapUe/*/NrUeMac/SlPsschScheduling",
-//        MakeBoundCallback(&Outputter::NotifySlPsschScheduling, &psschStats));
-//
-//    NS_LOG_DEBUG("Outputter: Connecting to RxPscchTraceUe trace source");
-//    UePhyPscchRxOutputStats pscchPhyStats;
-//    pscchPhyStats.SetDb(&db, "pscchRxUePhy");
-//    Config::ConnectWithoutContext(
-//        "/NodeList/*/DeviceList/*/$ns3::NrUeNetDevice/ComponentCarrierMapUe/*/NrUePhy/"
-//        "NrSpectrumPhyList/*/RxPscchTraceUe",
-//        MakeBoundCallback(&Outputter::NotifySlPscchRx, &pscchPhyStats));
-//
-//    NS_LOG_DEBUG("Outputter: Connecting to RxPsschTraceUe trace source");
-//    UePhyPsschRxOutputStats psschPhyStats;
-//    psschPhyStats.SetDb(&db, "psschRxUePhy");
-//    Config::ConnectWithoutContext(
-//        "/NodeList/*/DeviceList/*/$ns3::NrUeNetDevice/ComponentCarrierMapUe/*/NrUePhy/"
-//        "NrSpectrumPhyList/*/RxPsschTraceUe",
-//        MakeBoundCallback(&Outputter::NotifySlPsschRx, &psschPhyStats));
-//
-//    NS_LOG_DEBUG("Outputter: Connecting to RxRlcPduWithTxRnti trace source");
-//    UeRlcRxOutputStats ueRlcRxStats;
-//    ueRlcRxStats.SetDb(&db, "rlcRx");
-//    Config::ConnectWithoutContext("/NodeList/*/DeviceList/*/$ns3::NrUeNetDevice/"
-//                                  "ComponentCarrierMapUe/*/NrUeMac/RxRlcPduWithTxRnti",
-//                                  MakeBoundCallback(&Outputter::NotifySlRlcPduRx, &ueRlcRxStats));
-
-    NS_LOG_DEBUG("Outputter: Connecting to V2xKpi trace source");
-    V2xKpi v2xKpi;
-    std::string v2xKpiPath = outputPath + outputName;
-    v2xKpi.SetDbPath(v2xKpiPath);
-    v2xKpi.SetTxAppDuration(this->m_stopTime.GetSeconds());
-    Outputter::SavePositionPerIP(&v2xKpi);
-    v2xKpi.SetRangeForV2xKpis(200);
 
     std::string mobilityFileName = outputPath + "mobility-ues.txt";
     NS_LOG_DEBUG("Outputter: Connecting to Mobility trace source");
@@ -466,13 +354,7 @@ Core::run()
     Simulator::Stop(this->m_stopTime);
     Simulator::Run();
 
-//    pscchStats.EmptyCache();
     pktStats.EmptyCache();
-//    psschStats.EmptyCache();
-//    pscchPhyStats.EmptyCache();
-//    psschPhyStats.EmptyCache();
-//    ueRlcRxStats.EmptyCache();
-    // v2xKpi.WriteKpis();
     Simulator::Destroy();
 }
 
